@@ -100,6 +100,7 @@ void arrayParser(void);
 
   //ISR CUANDO VENGA UN CLOCK DESCENDENTE
 
+/*
  void ptrToClock(void){
 	 turnOn_RedLed();
 	 new_data = !(gpioRead(PIN_MAGTEK_DATA)); // new bit
@@ -114,6 +115,9 @@ void arrayParser(void);
 
  		 if((character == SS)   && (ss_received == false)     ){
  			 ss_received = true; //recibi el start sentinel
+ 		 }
+ 		 if((es_received == false) &&   (ss_received == true)){
+ 			 counter++;
  		 }
  		 else if((character == ES)   && (es_received == false) &&   (ss_received == true)    ){
  			 es_received = true; //recibi el end sentinel
@@ -130,12 +134,38 @@ void arrayParser(void);
  		 character = 0;
  	 }
  	 else if(read_data==true){
- 		 counter++;
  		 bit_counter++;
  	 }
  	turnOff_RedLed();
 
  }
+*/
+  void ptrToClock(void){
+ 	 turnOn_RedLed();
+ 	 new_data = !(gpioRead(PIN_MAGTEK_DATA)); // new bit
+
+ 	 //comienzo a armar el character
+ 	 if( (bit_counter < CHAR_LENGHT)  ){
+ 		 character = character | (new_data << bit_counter); // pongo el bit donde vaya en el character
+ 	 }
+  	 if( (bit_counter == (CHAR_LENGHT -1))  ){// llego a completar un char
+
+
+  		 // dump el character en la palabra
+  		 data[char_counter++] = character;
+
+  		 // vovler a inicializar bit counter y character
+  		 bit_counter = 0;
+  		 character = 0;
+  	 }
+  	 else{
+  		 bit_counter++;
+  	 }
+
+
+  	turnOff_RedLed();
+
+  }
 
 
  //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
@@ -191,7 +221,7 @@ void arrayParser(void);
  void initialize_data(void){
 	 for(uint8_t i=0;i<(SIZE(data));i++){
 		 data[i] = 0;
-		 readable_data[i]=0;
+		// readable_data[i]=0;
 	 }
  }
 
