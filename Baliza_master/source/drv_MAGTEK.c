@@ -59,6 +59,7 @@ static bool card_ready = false;
 static uint8_t char_counter = 0;
 static uint8_t bit_counter = 0;
 static card_char character = 0;
+static int counter = 0;
 
 //new data
 static bool new_data = 0;
@@ -129,6 +130,7 @@ void arrayParser(void);
  		 character = 0;
  	 }
  	 else if(read_data==true){
+ 		 counter++;
  		 bit_counter++;
  	 }
  	turnOff_RedLed();
@@ -139,18 +141,28 @@ void arrayParser(void);
  //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
 
  void ptrToEnable(void){
-	 turnOn_BlueLed(); // turn on white Led
-	 turnOn_RedLed();
-	 turnOn_GreenLed();
+
 
 
 	 enable = !gpioRead(PIN_MAGTEK_ENABLE);
 
-	 if(status == _WAITING_) {
-		initialize_data();
+	 if(status == _WAITING_){
+
+		 turnOn_BlueLed(); // turn on white Led
+		 turnOn_RedLed();
+		 turnOn_GreenLed();
+
+		 initialize_data();
 	 }
 	 status++; //STATUS = 1 MEANS _READING_
 	 if(status == _END_){
+
+
+		 turnOff_BlueLed();
+		 turnOff_RedLed();
+		 turnOff_GreenLed();
+
+
 		 arrayParser();
 		 status = _WAITING_;
 	 }
@@ -172,9 +184,6 @@ void arrayParser(void);
 
 
 
-	 turnOff_BlueLed();
-	 turnOff_RedLed();
-	 turnOff_GreenLed();
   }
 
 
@@ -188,7 +197,10 @@ void arrayParser(void);
 
 
  void arrayParser(void){
-	 for(uint8_t i=0 , uint8_t k=0 ;i<SIZE(data);i++){
+	 uint8_t i=0 ;
+	 uint8_t k=0 ;
+
+	 for(i=0,k=0 ;i<SIZE(data);i++){
 		 switch(data[i]){
 		 	 case 0b10000://0
 		 		readable_data[k]='0';
