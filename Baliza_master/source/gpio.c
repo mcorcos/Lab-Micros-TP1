@@ -130,10 +130,27 @@ void gpioToggle (pin_t pin){
  * @param pin the pin to read (according PORTNUM2PIN)
  * @return HIGH or LOW
  */
-bool gpioRead (pin_t pin) {
+/*bool gpioRead (pin_t pin) {
 
 	GPIO_Type* gpio = GPIO_PTRS[PIN2PORT(pin)];
 	return (( gpio->PDIR &  (1<<PIN2NUM(pin)) ) == (1<<PIN2NUM(pin)));
+
+}*/
+
+
+bool gpioRead (pin_t pin) {
+
+	bool result;
+
+	uint8_t port = PIN2PORT(pin);
+	uint8_t pin_num = PIN2NUM(pin);
+
+	GPIO_Type* gpio = GPIO_PTRS[port];
+
+	result = gpio->PDIR & GPIO_PDIR_PDI(1 << pin_num);
+
+	return result;
+
 
 }
 

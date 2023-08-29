@@ -25,7 +25,7 @@
  /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
-
+typedef void(*ptr_to_fun)(const uint8_t* data);
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -33,10 +33,11 @@
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
- void initMagtek(void);
+ void initMagtek(ptr_to_fun fun);
  void ptrToClock(void);
  void ptrToEnable(void);
- void initialize_data(void);
+ void Function(const uint8_t* data);
+
 
 #endif // _DRV_MAGTEK_H_
 

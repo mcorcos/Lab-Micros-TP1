@@ -9,6 +9,7 @@
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
+#include <stdio.h>
 #include "drv_MAGTEK.h"
 #include "drv_K64.h"
 #include "board.h"
@@ -19,61 +20,64 @@
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-#define _WAITING_ 0
-#define _READING_ 1
-#define _END_ 2
-
 #define CHAR_LENGHT (5)
-#define MAX_DATA (60)
+#define MAX_CHARS (40)
 
-
-#define SS 0b01011//;
+#define SS 0b11010//;
 #define ES 0b11111//?
-#define FS 0b01101//=
+#define FS 0b10110//=
+
 
 #define SIZE(dat)  (sizeof(dat)/ sizeof(dat[0]))
 
  /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
-typedef uint8_t card_char;
 
+typedef struct{
+	uint8_t 	data 	:5;
+	uint8_t 	nc		:3;
+}mydata;
+
+
+
+enum {_SS_,_PAN_,_FS_,_DATA_,_ES_ , _ERR_};
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-static int enable = 0;
-static int status = _WAITING_ ;
-
 //data
-static card_char data[MAX_DATA];
-static card_char readable_data[MAX_DATA];
+static uint8_t ID[MAX_CHARS];
 
 //flags
 static bool read_data = false;
-static bool ss_received = false;
-static bool es_received = false;
-static bool card_ready = false;
+static uint8_t status;
+
 
 //contadores
 static uint8_t char_counter = 0;
 static uint8_t bit_counter = 0;
-static card_char character = 0;
-static int counter = 0;
+static mydata my_data = {.data = 0b11111, .nc = 0b000};
+static uint8_t k=0 ; //iterador del nuevo arreglo
 
-//new data
-static bool new_data = 0;
+static ptr_to_fun Fun;
+
 
 
 /************************************************hola*******************************
  * VARIABLE FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
-void arrayParser(void);
+void parseReadableData(uint8_t);
+void initialize_data(void);
+void parseData(void);
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-  void initMagtek(void){
+  void initMagtek(ptr_to_fun fun){
+
+	  //Pines necesarios
 
 	  gpioMode(PIN_MAGTEK_ENABLE,INPUT);
 	  gpioMode(PIN_MAGTEK_CLOCK,INPUT);
@@ -89,114 +93,143 @@ void arrayParser(void);
 	  gpioWrite(DEBUG_PIN_2,LOW);
 #endif
 
-	  gpioIRQ(PIN_MAGTEK_ENABLE,PORT_eInterruptEither,ptrToEnable);
-	  gpioIRQ(PIN_MAGTEK_CLOCK,PORT_eInterruptFalling,ptrToClock);
+	  //gpioIRQ(PIN_MAGTEK_ENABLE,PORT_eInterruptEither,ptrToEnable);
+	  gpioIRQ(PIN_MAGTEK_CLOCK,PORT_eInterruptFalling,ptrToClock); //Por el moemnto solo necesito la interrupcion de clock
+
+	  Fun = fun;
+
+	  //status init
+	  status = _SS_;
+
+	  //
+	  read_data=false;
+	  bit_counter=0;
 
 
   }
 
 
+void ptrToClock(void){
+	my_data.data =  (my_data.data<<1) | ( !(gpioRead(PIN_MAGTEK_DATA)));
+	bit_counter++;
+	if(bit_counter==CHAR_LENGHT){
+		read_data=true;
+		bit_counter=0;
+	}
+	parseData();
+}
 
 
-  //ISR CUANDO VENGA UN CLOCK DESCENDENTE
+void parseData(void){
 
-/*
- void ptrToClock(void){
-	 turnOn_RedLed();
-	 new_data = !(gpioRead(PIN_MAGTEK_DATA)); // new bit
-	 read_data = true;
+	if((status==_SS_) && (my_data.data == SS) ){
 
-	 //comienzo a armar el character
-	 if( (read_data == true) &&  (bit_counter < CHAR_LENGHT) && (char_counter < MAX_DATA)  ){
-		 character = character | (new_data << bit_counter); // pongo el bit donde vaya en el character
-	 }
- 	 if( (read_data == true)   &&   (bit_counter == (CHAR_LENGHT -1))  ){// llego a completar un char
+		status = _PAN_;
+		read_data = false;
+		bit_counter = 0;
+		my_data.data = 0;
+	}
+	if ((status == _PAN_)  ){
+		if(read_data==true){
+
+			read_data=false;
+
+			switch(my_data.data){
+					 case 0b00001://0
+						 ID[k]='0';
+						break;
+					 case 0b10000: //1
+						 ID[k]='1';
+						break;
+					 case 0b01000://2
+						 ID[k]='2';
+						break;
+					 case 0b11001://3
+						 ID[k]='3';
+						break;
+					 case 0b00100://4
+						 ID[k]='4';
+						break;
+					 case 0b10101://5
+						 ID[k]='5';
+						break;
+					 case 0b01101://6
+						 ID[k]='6';
+						break;
+					 case 0b11100://7
+						 ID[k]='7';
+						break;
+					 case 0b00010://8
+						 ID[k]='8';
+						break;
+					 case 0b10011://9
+						 ID[k]='9';
+						break;
+					 case 0b01011://:
+						 ID[k]='x';
+						 status=_ERR_;
+						break;
+					 case 0b11010://;
+						 ID[k]='x';
+						 status=_ERR_;
+						break;
+					 case 0b00111://<
+						 ID[k]='x';
+						 status=_ERR_;
+						break;
+					 case 0b10110://=
+						 ID[k]='F';
+						 status = _FS_;
+						 //k--;
+						break;
+					 case 0b01110://<
+						 ID[k]='x';
+						 status=_ERR_;
+						break;
+					 case 0b11111://?
+						 ID[k]='E';
+						 status = _ES_;
+						// k--;
+						break;
+					 default:
+						 ID[k]='X';
+						 status=_ERR_;
+						break;
 
 
- 		 if((character == SS)   && (ss_received == false)     ){
- 			 ss_received = true; //recibi el start sentinel
- 		 }
- 		 if((es_received == false) &&   (ss_received == true)){
- 			 counter++;
- 		 }
- 		 else if((character == ES)   && (es_received == false) &&   (ss_received == true)    ){
- 			 es_received = true; //recibi el end sentinel
- 		 }
- 		 else if((es_received == true) &&   (ss_received == true) ){
- 			card_ready = true; //La tarjeta esta lista para usarse
- 		 }
 
- 		 // dump el character en la palabra
- 		 data[char_counter++] = character;
-
- 		 // vovler a inicializar bit counter y character
- 		 bit_counter = 0;
- 		 character = 0;
- 	 }
- 	 else if(read_data==true){
- 		 bit_counter++;
- 	 }
- 	turnOff_RedLed();
-
- }
-*/
-  void ptrToClock(void){
- 	 turnOn_RedLed();
- 	 new_data = !(gpioRead(PIN_MAGTEK_DATA)); // new bit
-
- 	 //comienzo a armar el character
- 	 if( (bit_counter < CHAR_LENGHT)  ){
- 		 character = character | (new_data << bit_counter); // pongo el bit donde vaya en el character
- 	 }
-  	 if( (bit_counter == (CHAR_LENGHT -1))  ){// llego a completar un char
+					 }
+			k++;
+			my_data.data = 0;
+		}
+	}
+	if (( (status == _ES_) || (status == _ERR_) )  ){
+		if(status == _ES_ ){
+			Fun(ID);
+		}
+		if(status == _ERR_){
+			Fun(NULL);
+		}
+		initialize_data();
+		k=0;
+		status = _SS_;
+	}
+}
 
 
-  		 // dump el character en la palabra
-  		 data[char_counter++] = character;
-
-  		 // vovler a inicializar bit counter y character
-  		 bit_counter = 0;
-  		 character = 0;
-  	 }
-  	 else{
-  		 bit_counter++;
-  	 }
-
-
-  	turnOff_RedLed();
-
-  }
-
-
- //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
+/* //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
 
  void ptrToEnable(void){
-
-
 
 	 enable = !gpioRead(PIN_MAGTEK_ENABLE);
 
 	 if(status == _WAITING_){
-
-		 turnOn_BlueLed(); // turn on white Led
-		 turnOn_RedLed();
-		 turnOn_GreenLed();
-
 		 initialize_data();
 	 }
 	 status++; //STATUS = 1 MEANS _READING_
 	 if(status == _END_){
-
-
-		 turnOff_BlueLed();
-		 turnOff_RedLed();
-		 turnOff_GreenLed();
-
-
-		 arrayParser();
 		 status = _WAITING_;
 	 }
-
 
 	 //contadores en 0
 	 bit_counter = 0;
@@ -209,98 +242,32 @@ void arrayParser(void);
 	 es_received = false;
 	 card_ready = false;
 
-
-
-
-
-
-  }
+  }*/
 
 
 
  void initialize_data(void){
-	 for(uint8_t i=0;i<(SIZE(data));i++){
-		 data[i] = 0;
+	 for(uint8_t i=0;i<(SIZE(ID));i++){
+		 ID[i] = 0;
 		// readable_data[i]=0;
 	 }
  }
 
 
- void arrayParser(void){
-	 uint8_t i=0 ;
-	 uint8_t k=0 ;
-
-	 for(i=0,k=0 ;i<SIZE(data);i++){
-		 switch(data[i]){
-		 	 case 0b10000://0
-		 		readable_data[k]='0';
-		 		k++;
-		 		break;
-		 	 case 0b00001: //1
-		 		readable_data[k]='1';
-		 		k++;
-		 		break;
-		 	 case 0b00010://2
-		 		readable_data[k]='2';
-		 		k++;
-		 		break;
-		 	 case 0b10011://3
-		 		readable_data[k]='3';
-		 		k++;
-		 		break;
-		 	 case 0b00100://4
-		 		readable_data[k]='4';
-		 		k++;
-		 		break;
-		 	 case 0b10101://5
-		 		readable_data[k]='5';
-		 		k++;
-		 		break;
-		 	 case 0b10110://6
-		 		readable_data[k]='6';
-		 		k++;
-		 		break;
-		 	 case 0b00111://7
-		 		readable_data[k]='7';
-		 		k++;
-		 		break;
-		 	 case 0b01000://8
-		 		readable_data[k]='8';
-		 		k++;
-		 		break;
-		 	 case 0b11001://9
-		 		readable_data[k]='9';
-		 		k++;
-		 		break;
-		 	 case 0b11010://:
-		 		readable_data[k]=':';
-		 		k++;
-		 		break;
-		 	 case 0b01011://;
-		 		readable_data[k]='S';
-		 		k++;
-		 		break;
-		 	 case 0b11100://<
-		 		readable_data[k]='<';
-		 		k++;
-		 		break;
-		 	 case 0b01101://=
-		 		readable_data[k]='F';
-		 		k++;
-		 		break;
-		 	 case 0b01110://<
-		 		readable_data[k]='>';
-		 		k++;
-		 		break;
-		 	 case 0b11111://?
-		 		readable_data[k]='E';
-		 		k++;
-		 		break;
 
 
-		 }
-	 }
+
+
+
+
+ void parseReadableData(uint8_t data){
+
+}
+
+ void Function(const uint8_t* data){
+
  }
+
 
 
 
