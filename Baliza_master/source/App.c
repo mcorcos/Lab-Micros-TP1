@@ -31,7 +31,7 @@
 void App_Init (void)
 {
 	init_K64Leds();
-	initMagtek(Function);
+	initMagtek();
 }
 
 /* Función que se llama constantemente en un ciclo infinito */

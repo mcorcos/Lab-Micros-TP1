@@ -16,16 +16,33 @@
 #include "debug.h"
 #include "gpio.h"
 
+
  /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
 #define CHAR_LENGHT (5)
-#define MAX_CHARS (40)
+#define MAX_CHARS (200)
+#define MAX_PAN (19)
 
-#define SS 0b11010//;
-#define ES 0b11111//?
-#define FS 0b10110//=
+#define CHAR_0 0b10000
+#define CHAR_1 0b00001
+#define CHAR_2 0b00010
+#define CHAR_3 0b10011
+#define CHAR_4 0b00100
+#define CHAR_5 0b10101
+#define CHAR_6 0b10110
+#define CHAR_7 0b00111
+#define CHAR_8 0b01000
+#define CHAR_9 0b11001
+#define PUNTOPUNTO 0b11010
+#define PUNTOCOMA 0b01011 // SS
+#define MINOR 0b11100
+#define EQUAL 0b01101 // FS
+#define MAJOR 0b01110
+#define QUESTION 0b11111 // ES
+
+#define MIRRORED_PUNTOCOMA 0b11010
 
 
 #define SIZE(dat)  (sizeof(dat)/ sizeof(dat[0]))
@@ -34,50 +51,53 @@
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
+enum { _WAITING , _READING , _END};
+enum{_SS , _PAN ,_ES,_ERR,_FS};
 typedef struct{
-	uint8_t 	data 	:5;
-	uint8_t 	nc		:3;
-}mydata;
-
-
-
-enum {_SS_,_PAN_,_FS_,_DATA_,_ES_ , _ERR_};
+	uint8_t data :5;
+	uint8_t nc   :3;
+}character;
+typedef struct{
+	uint8_t PAN[19];
+	uint8_t ADD[18];
+}ID;
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-//data
-static uint8_t ID[MAX_CHARS];
 
 //flags
-static bool read_data = false;
-static uint8_t status;
+static uint8_t state = _WAITING;
+static uint8_t status = _SS;
 
+//data
+static uint8_t data[MAX_CHARS];
 
-//contadores
-static uint8_t char_counter = 0;
-static uint8_t bit_counter = 0;
-static mydata my_data = {.data = 0b11111, .nc = 0b000};
-static uint8_t k=0 ; //iterador del nuevo arreglo
+//contador
+static uint16_t bit_counter = 0;
+static uint16_t shift_counter = 0;
+static uint16_t iterator = 0;
+static uint16_t writer = 0;
 
-static ptr_to_fun Fun;
-
-
-
+//mis tipos de datos
+static character mydata;
+static ID myID;
 /************************************************hola*******************************
  * VARIABLE FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
-void parseReadableData(uint8_t);
-void initialize_data(void);
-void parseData(void);
-
+void flush(void);
+void parse(void);
+void parse_alphanumeric(character data);
+void write(char character , uint8_t state, uint8_t iterator);
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
-  void initMagtek(ptr_to_fun fun){
+  void initMagtek(){
 
 	  //Pines necesarios
+
+	  turnOn_GreenLed();
 
 	  gpioMode(PIN_MAGTEK_ENABLE,INPUT);
 	  gpioMode(PIN_MAGTEK_CLOCK,INPUT);
@@ -93,181 +113,156 @@ void parseData(void);
 	  gpioWrite(DEBUG_PIN_2,LOW);
 #endif
 
-	  //gpioIRQ(PIN_MAGTEK_ENABLE,PORT_eInterruptEither,ptrToEnable);
+	  gpioIRQ(PIN_MAGTEK_ENABLE,PORT_eInterruptEither,ptrToEnable);
 	  gpioIRQ(PIN_MAGTEK_CLOCK,PORT_eInterruptFalling,ptrToClock); //Por el moemnto solo necesito la interrupcion de clock
 
-	  Fun = fun;
 
-	  //status init
-	  status = _SS_;
 
-	  //
-	  read_data=false;
-	  bit_counter=0;
+
+
+
+	  turnOff_GreenLed();
 
 
   }
 
-
 void ptrToClock(void){
-	my_data.data =  (my_data.data<<1) | ( !(gpioRead(PIN_MAGTEK_DATA)));
-	bit_counter++;
-	if(bit_counter==CHAR_LENGHT){
-		read_data=true;
-		bit_counter=0;
-	}
-	parseData();
+	bool new_data = !(gpioRead(PIN_MAGTEK_DATA));
+	data[bit_counter++] = new_data;
 }
-
-
-void parseData(void){
-
-	if((status==_SS_) && (my_data.data == SS) ){
-
-		status = _PAN_;
-		read_data = false;
-		bit_counter = 0;
-		my_data.data = 0;
-	}
-	if ((status == _PAN_)  ){
-		if(read_data==true){
-
-			read_data=false;
-
-			switch(my_data.data){
-					 case 0b00001://0
-						 ID[k]='0';
-						break;
-					 case 0b10000: //1
-						 ID[k]='1';
-						break;
-					 case 0b01000://2
-						 ID[k]='2';
-						break;
-					 case 0b11001://3
-						 ID[k]='3';
-						break;
-					 case 0b00100://4
-						 ID[k]='4';
-						break;
-					 case 0b10101://5
-						 ID[k]='5';
-						break;
-					 case 0b01101://6
-						 ID[k]='6';
-						break;
-					 case 0b11100://7
-						 ID[k]='7';
-						break;
-					 case 0b00010://8
-						 ID[k]='8';
-						break;
-					 case 0b10011://9
-						 ID[k]='9';
-						break;
-					 case 0b01011://:
-						 ID[k]='x';
-						 status=_ERR_;
-						break;
-					 case 0b11010://;
-						 ID[k]='x';
-						 status=_ERR_;
-						break;
-					 case 0b00111://<
-						 ID[k]='x';
-						 status=_ERR_;
-						break;
-					 case 0b10110://=
-						 ID[k]='F';
-						 status = _FS_;
-						 //k--;
-						break;
-					 case 0b01110://<
-						 ID[k]='x';
-						 status=_ERR_;
-						break;
-					 case 0b11111://?
-						 ID[k]='E';
-						 status = _ES_;
-						// k--;
-						break;
-					 default:
-						 ID[k]='X';
-						 status=_ERR_;
-						break;
-
-
-
-					 }
-			k++;
-			my_data.data = 0;
-		}
-	}
-	if (( (status == _ES_) || (status == _ERR_) )  ){
-		if(status == _ES_ ){
-			Fun(ID);
-		}
-		if(status == _ERR_){
-			Fun(NULL);
-		}
-		initialize_data();
-		k=0;
-		status = _SS_;
-	}
-}
-
-
-/* //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
+ //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
 
  void ptrToEnable(void){
-
-	 enable = !gpioRead(PIN_MAGTEK_ENABLE);
-
-	 if(status == _WAITING_){
-		 initialize_data();
+	 turnOff_RedLed();
+	 if((state == _WAITING)){
+		 turnOn_BlueLed();
+		state =_READING;
 	 }
-	 status++; //STATUS = 1 MEANS _READING_
-	 if(status == _END_){
-		 status = _WAITING_;
+	 else if ((state == _READING ) ) {
+		 turnOff_BlueLed();
+		 turnOn_RedLed();
+		 state = _END;
 	 }
+	 if(state == _END){
+		 parse();
+		 flush();
 
-	 //contadores en 0
-	 bit_counter = 0;
-	 char_counter = 0;
-	 character = 0;
-
-	 //flags en false
-	 read_data = false;
-	 ss_received = false;
-	 es_received = false;
-	 card_ready = false;
-
-  }*/
-
-
-
- void initialize_data(void){
-	 for(uint8_t i=0;i<(SIZE(ID));i++){
-		 ID[i] = 0;
-		// readable_data[i]=0;
+		 //ctadores en 0
+		 bit_counter=0;
+		 iterator =0;
+		 writer =0;
+		 //original states
+		 status = _SS;
+		 state = _WAITING;
 	 }
  }
 
 
+ void flush(void){
+	 for(uint8_t i=0;i<SIZE(data);i++){
+		 data[i] = 0;
+	 }
+	 for(uint8_t i=0;i<SIZE(myID.PAN);i++){
+		 myID.PAN[i] = 0;
+	 }
+ }
 
+ void parse(void){
 
+	 for(iterator=0; iterator<SIZE(data) && (status == _SS) ;iterator++){
+		 mydata.data = (mydata.data<<1) | (data[iterator]);
+		 if(mydata.data == MIRRORED_PUNTOCOMA){
+			 status = _PAN;
+		 }
+	 }
+	 if(status == _PAN){
+		 mydata.data = 0b00000;
+		 for(shift_counter = 0; ( (status == _PAN) || (status == _FS)  )&& (iterator < MAX_CHARS)  ;shift_counter++,iterator++){ //para cada character itero para formar la palabra
+			 mydata.data = mydata.data | (data[iterator]<<shift_counter);
+			 if(shift_counter == (CHAR_LENGHT-1)){
+				 parse_alphanumeric(mydata);
+				 mydata.data = 0b00000;
+				 shift_counter = -1; //opr el post incremento del for cuando vuevle me lo deja en 0
+			 }
+		 }
+	}
+	 if(status == _ES){
+		 status = _SS;
+	 }
+	 if(status == _ERR){
+		 status = _SS;
+	 }
+}
 
+void parse_alphanumeric(character data){
+	switch(data.data){
+		case CHAR_0:
+			write('0',status,writer);
+			break;
+		case CHAR_1:
+			write('1',status,writer);
+			break;
+		case CHAR_2:
+			write('2',status,writer);
+			break;
+		case CHAR_3:
+			write('3',status,writer);
+			break;
+		case CHAR_4:
+			write('4',status,writer);
+			break;
+		case CHAR_5:
+			write('5',status,writer);
+			break;
+		case CHAR_6:
+			write('6',status,writer);
+			break;
+		case CHAR_7:
+			write('7',status,writer);
+			break;
+		case CHAR_8:
+			write('8',status,writer);
+			break;
+		case CHAR_9:
+			write('9',status,writer);
+			break;
+		case PUNTOPUNTO:
+			status = _ERR;
+			break;
+		case PUNTOCOMA:
+			status = _ERR;
+			break;
+		case MINOR:
+			status = _ERR;
+			break;
+		case MAJOR:
+			status = _ERR;
+			break;
+		case EQUAL:
+			status = _FS;
+			writer=-1;;
+			break;
+		case QUESTION:
+			writer=-1; // asi no se saltea una posicion por el FS cuando escribe
+			status = _ES;
+			break;
+		default:
+			status = _ERR;
 
-
-
- void parseReadableData(uint8_t data){
+	}
+	writer++;
 
 }
 
- void Function(const uint8_t* data){
+void write(char character , uint8_t state, uint8_t iterator_){
+	switch(state){
+		case (_PAN):
+			myID.PAN[iterator_] = character;
+			break;
+		case (_FS):
+			myID.ADD[iterator_] = character;
+			break;
 
- }
-
-
-
+	}
+}
 

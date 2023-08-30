@@ -33,10 +33,9 @@ typedef void(*ptr_to_fun)(const uint8_t* data);
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
- void initMagtek(ptr_to_fun fun);
+ void initMagtek();
  void ptrToClock(void);
  void ptrToEnable(void);
- void Function(const uint8_t* data);
 
 
 #endif // _DRV_MAGTEK_H_
