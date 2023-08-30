@@ -7,6 +7,7 @@ C_SRCS += \
 ../source/App.c \
 ../source/IRQ.c \
 ../source/SysTick.c \
+../source/drv_DEVBOARD.c \
 ../source/drv_K64.c \
 ../source/drv_MAGTEK.c \
 ../source/gpio.c \
@@ -16,6 +17,7 @@ OBJS += \
 ./source/App.o \
 ./source/IRQ.o \
 ./source/SysTick.o \
+./source/drv_DEVBOARD.o \
 ./source/drv_K64.o \
 ./source/drv_MAGTEK.o \
 ./source/gpio.o \
@@ -25,6 +27,7 @@ C_DEPS += \
 ./source/App.d \
 ./source/IRQ.d \
 ./source/SysTick.d \
+./source/drv_DEVBOARD.d \
 ./source/drv_K64.d \
 ./source/drv_MAGTEK.d \
 ./source/gpio.d \

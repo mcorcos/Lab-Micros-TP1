@@ -4,20 +4,16 @@
   @author   G4
  ******************************************************************************/
 
-
-#ifndef _DRV_MAGTEK_H_
-#define _DRV_MAGTEK_H_
+#ifndef _drv_DEVBOARD_H_
+#define _drv_DEVBOARD_H_
 
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
-#include <stdint.h>
-#include <stdbool.h>
-#include "drv_K64.h"
-#include "board.h"
-#include "debug.h"
 #include "gpio.h"
-#include "drv_DEVBOARD.h"
+#include "board.h"
+#include <stdbool.h>
+
 
  /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
@@ -25,28 +21,31 @@
 
 
 
-
-
  /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
-typedef void(*ptr_to_fun)(const uint8_t* data);
+
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
-
+/*******************************************************************************
+ * function PROTOTYPES WITH local SCOPE
+ ******************************************************************************/
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
- void initMagtek();
- void ptrToClock(void);
- void ptrToEnable(void);
 
 
-#endif // _DRV_MAGTEK_H_
+void init_DEVBOARD(void);
+ void turnOn_ErrorLed();
 
 
 
+
+
+
+
+#endif // _drv_DEVBOARD_H_
 
 
 

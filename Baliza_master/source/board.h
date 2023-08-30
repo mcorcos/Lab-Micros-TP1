@@ -15,6 +15,7 @@
 
 
 
+
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
@@ -49,7 +50,8 @@
 
 //DEBUG
 #define DEBUG_PIN_1 PIN_PTB_23
-#define DEBUG_PIN_2 PIN_PTB_23
+#define DEBUG_PIN_2 PIN_PTB_24
+#define ERROR_PIN_1	PIN_PTB_25
 
 
 

@@ -11,10 +11,8 @@
  ******************************************************************************/
 #include <stdio.h>
 #include "drv_MAGTEK.h"
-#include "drv_K64.h"
-#include "board.h"
-#include "debug.h"
-#include "gpio.h"
+
+
 
 
  /*******************************************************************************
@@ -97,38 +95,35 @@ void write(char character , uint8_t state, uint8_t iterator);
 
 	  //Pines necesarios
 
-	  turnOn_GreenLed();
+	  turnOn_GreenLed(); //Prendo led verde
 
 	  gpioMode(PIN_MAGTEK_ENABLE,INPUT);
 	  gpioMode(PIN_MAGTEK_CLOCK,INPUT);
 	  gpioMode(PIN_MAGTEK_DATA,INPUT);
 
-#if DEBUG_MODE && DEBUG_CARD
-	  gpioMode(DEBUG_PIN_1,OUTPUT);
-	  gpioWrite(DEBUG_PIN_1,LOW);
-#endif
-
-#if DEBUG_MODE && DEBUG_CARD
-	  gpioMode(DEBUG_PIN_2,OUTPUT);
-	  gpioWrite(DEBUG_PIN_2,LOW);
-#endif
 
 	  gpioIRQ(PIN_MAGTEK_ENABLE,PORT_eInterruptEither,ptrToEnable);
 	  gpioIRQ(PIN_MAGTEK_CLOCK,PORT_eInterruptFalling,ptrToClock); //Por el moemnto solo necesito la interrupcion de clock
 
 
 
+	  turnOff_GreenLed();//apago led verde
+
+
+	  //Modo Debug
 
 
 
-	  turnOff_GreenLed();
 
 
   }
 
 void ptrToClock(void){
+	if((state == _READING )){
 	bool new_data = !(gpioRead(PIN_MAGTEK_DATA));
 	data[bit_counter++] = new_data;
+	}
+
 }
  //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
 
@@ -151,6 +146,7 @@ void ptrToClock(void){
 		 bit_counter=0;
 		 iterator =0;
 		 writer =0;
+
 		 //original states
 		 status = _SS;
 		 state = _WAITING;
@@ -176,20 +172,29 @@ void ptrToClock(void){
 		 }
 	 }
 	 if(status == _PAN){
-		 mydata.data = 0b00000;
-		 for(shift_counter = 0; ( (status == _PAN) || (status == _FS)  )&& (iterator < MAX_CHARS)  ;shift_counter++,iterator++){ //para cada character itero para formar la palabra
-			 mydata.data = mydata.data | (data[iterator]<<shift_counter);
-			 if(shift_counter == (CHAR_LENGHT-1)){
+
+		 mydata.data = 0b00000; //aranco con una palabra en 0
+		 	 	 	 	 	 	 // El estado tiene que ser PAN , o FS      y el iterador tampoco se puede pasar de Data
+		 for(shift_counter = 0; ( (status == _PAN) || (status == _FS)  )   && (iterator < MAX_CHARS)  ;       shift_counter++,iterator++){  //para cada character itero para formar la palabra
+
+			 mydata.data = mydata.data | (data[iterator]<<shift_counter); // voy creando 0b00001 la palabra
+			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 //                    ^-----
+			 if(shift_counter == (CHAR_LENGHT-1)){ // cuando el contador llega a la posicion 4 , pregunto que es la palabra
 				 parse_alphanumeric(mydata);
 				 mydata.data = 0b00000;
-				 shift_counter = -1; //opr el post incremento del for cuando vuevle me lo deja en 0
+				 shift_counter = -1; //por el post incremento del for cuando vuelve me lo deja en 0
 			 }
 		 }
 	}
-	 if(status == _ES){
+	 if(status == _ES){ //tengo que conseguir el lrc
 		 status = _SS;
 	 }
 	 if(status == _ERR){
+
+
+#if ERROR_MODE && ERROR_CARD
+		 turnOn_ErrorLed_1();
+#endif
 		 status = _SS;
 	 }
 }
@@ -227,7 +232,7 @@ void parse_alphanumeric(character data){
 			write('9',status,writer);
 			break;
 		case PUNTOPUNTO:
-			status = _ERR;
+			status = _ERR; //en los _ERR , no tendria que reibir nada de esto
 			break;
 		case PUNTOCOMA:
 			status = _ERR;
@@ -239,11 +244,11 @@ void parse_alphanumeric(character data){
 			status = _ERR;
 			break;
 		case EQUAL:
-			status = _FS;
+			status = _FS; // si es el separador pongo el writer en -1 por el post incremento de abajo
 			writer=-1;;
 			break;
 		case QUESTION:
-			writer=-1; // asi no se saltea una posicion por el FS cuando escribe
+			writer=-1; // asi no se saltea una posicion por el ES cuando escribe
 			status = _ES;
 			break;
 		default:
