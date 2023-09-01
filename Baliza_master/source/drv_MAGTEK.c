@@ -55,10 +55,10 @@ typedef struct{
 	uint8_t data :5;
 	uint8_t nc   :3;
 }character;
-typedef struct{
-	uint8_t PAN[19];
-	uint8_t ADD[18];
-}ID;
+
+
+typedef uint32_t id_number;
+
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -80,12 +80,19 @@ static uint16_t writer = 0;
 //mis tipos de datos
 static character mydata;
 static ID myID;
-/************************************************hola*******************************
+static id_number my_id_number;
+
+//event
+static bool magtek_interrupt = false;
+
+
+/*******************************************************************************
  * VARIABLE FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 void flush(void);
 void parse(void);
 void parse_alphanumeric(character data);
+void parse_PAN2NUM(void);
 void write(char character , uint8_t state, uint8_t iterator);
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -108,10 +115,6 @@ void write(char character , uint8_t state, uint8_t iterator);
 
 
 	  turnOff_GreenLed();//apago led verde
-
-
-	  //Modo Debug
-
 
 
 
@@ -139,8 +142,12 @@ void ptrToClock(void){
 		 state = _END;
 	 }
 	 if(state == _END){
+		 //interpretar
 		 parse();
-		 flush();
+
+
+		 //prendo el flag!!!1
+		 magtek_interrupt = true;
 
 		 //ctadores en 0
 		 bit_counter=0;
@@ -160,6 +167,9 @@ void ptrToClock(void){
 	 }
 	 for(uint8_t i=0;i<SIZE(myID.PAN);i++){
 		 myID.PAN[i] = 0;
+	 }
+	 for(uint8_t i=0;i<SIZE(myID.PAN);i++){
+		 myID.ADD[i] = 0;
 	 }
  }
 
@@ -271,3 +281,26 @@ void write(char character , uint8_t state, uint8_t iterator_){
 	}
 }
 
+
+bool magtek_iter(void){
+	return magtek_interrupt;
+}
+
+bool magtek_clear(void){
+	magtek_interrupt = false ;
+	flush();
+	return magtek_interrupt;
+}
+
+uint8_t* get_ID(void){
+	return &(myID.PAN);
+}
+
+
+void parse_PAN2NUM(void) {
+
+	my_id_number = 0;
+	for(uint8_t i=0; i<SIZE(myID.PAN) ; i++){
+		my_id_number += my_id_number*10 + (myID.PAN[i] - '0');
+	}
+}

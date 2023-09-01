@@ -35,6 +35,9 @@ typedef void(*ptr_to_fun)(const uint8_t* data);
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
+
+
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
@@ -42,6 +45,15 @@ typedef void(*ptr_to_fun)(const uint8_t* data);
  void ptrToClock(void);
  void ptrToEnable(void);
 
+ typedef struct{
+ 	uint8_t PAN[19];
+ 	uint8_t ADD[18];
+ }ID;
+
+//
+uint8_t* get_ID(void);
+ //has event
+ bool magtek_iter(void);
 
 #endif // _DRV_MAGTEK_H_
 
