@@ -10,6 +10,7 @@ C_SRCS += \
 ../source/alphabet.c \
 ../source/display.c \
 ../source/drv_DEVBOARD.c \
+../source/drv_DEVLEDS.c \
 ../source/drv_ENCODER.c \
 ../source/drv_K64.c \
 ../source/drv_MAGTEK.c \
@@ -25,6 +26,7 @@ OBJS += \
 ./source/alphabet.o \
 ./source/display.o \
 ./source/drv_DEVBOARD.o \
+./source/drv_DEVLEDS.o \
 ./source/drv_ENCODER.o \
 ./source/drv_K64.o \
 ./source/drv_MAGTEK.o \
@@ -40,6 +42,7 @@ C_DEPS += \
 ./source/alphabet.d \
 ./source/display.d \
 ./source/drv_DEVBOARD.d \
+./source/drv_DEVLEDS.d \
 ./source/drv_ENCODER.d \
 ./source/drv_K64.d \
 ./source/drv_MAGTEK.d \

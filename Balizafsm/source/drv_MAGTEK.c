@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include "drv_MAGTEK.h"
 #include "timer.h"
-
+#include "drv_DEVLEDS.h"
 
 
 
@@ -54,7 +54,7 @@
 enum { _WAITING , _READING , _END};
 enum{_SS , _PAN ,_ES,_ERR,_FS};
 typedef struct{
-	uint8_t data :5;
+	uint8_t data_m :5;
 	uint8_t nc   :3;
 }character;
 
@@ -70,8 +70,8 @@ typedef uint32_t id_number;
 static uint8_t state_m = _WAITING;
 static uint8_t status_m = _SS;
 
-//data
-static uint8_t data[MAX_CHARS];
+//data_m
+static uint8_t data_m[MAX_CHARS];
 
 //contador
 static uint16_t bit_counter = 0;
@@ -97,7 +97,7 @@ static tim_id_t timer_check_expired_magtek;
  ******************************************************************************/
 void flush(void);
 void parse(void);
-void parse_alphanumeric(character data);
+void parse_alphanumeric(character data_m);
 void parse_PAN2NUM(void);
 void check_card_ready(void);
 void write(char character , uint8_t state_m, uint8_t iterator);
@@ -120,7 +120,7 @@ void write(char character , uint8_t state_m, uint8_t iterator);
 
 	  timer_check_expired_magtek = timerGetId();
 
-	  timerStart(timer_check_expired_magtek,TIMER_MS2TICKS(5),TIM_MODE_PERIODIC,check_card_ready);
+	  timerStart(timer_check_expired_magtek,TIMER_MS2TICKS(500),TIM_MODE_PERIODIC,check_card_ready);
 
 
 
@@ -130,7 +130,7 @@ void write(char character , uint8_t state_m, uint8_t iterator);
 void ptrToClock(void){
 	if((state_m == _READING )){
 	bool new_data = !(gpioRead(PIN_MAGTEK_DATA));
-	data[bit_counter++] = new_data;
+	data_m[bit_counter++] = new_data;
 	}
 
 }
@@ -139,12 +139,11 @@ void ptrToClock(void){
  void ptrToEnable(void){
 	 turnOff_RedLed();
 	 if((state_m == _WAITING)){
-		 turnOn_BlueLed();
+
 		state_m =_READING;
 	 }
 	 else if ((state_m == _READING ) ) {
-		 turnOff_BlueLed();
-		 turnOn_RedLed();
+
 		 state_m = _END;
 	 }
 	 if(state_m == _END){
@@ -152,6 +151,7 @@ void ptrToClock(void){
 		 parse();
 
 		 //prendo el flag!!!1
+
 
 
 		 //ctadores en 0
@@ -162,16 +162,20 @@ void ptrToClock(void){
 		 //original state_ms
 		 status_m = _SS;
 		 state_m = _WAITING;
-
 		 magtek_card_ready = true;
+
+
 	 }
  }
 
 
  void check_card_ready(void){
-	 if(magtek_card_ready){
+	 if(magtek_card_ready == true){
+
+		 turnOn_D3Led();
 		 magtek_interrupt = true;
 		 magtek_card_ready = false;
+
 	 }
  }
 
@@ -179,8 +183,8 @@ void ptrToClock(void){
 
 
  void flush(void){
-	 for(uint8_t i=0;i<SIZE(data);i++){
-		 data[i] = 0;
+	 for(uint8_t i=0;i<SIZE(data_m);i++){
+		 data_m[i] = 0;
 	 }
 	 for(uint8_t i=0;i<SIZE(myID.PAN);i++){
 		 myID.PAN[i] = '0';
@@ -192,23 +196,23 @@ void ptrToClock(void){
 
  void parse(void){
 
-	 for(iterator=0; iterator<SIZE(data) && (status_m == _SS) ;iterator++){
-		 mydata.data = (mydata.data<<1) | (data[iterator]);
-		 if(mydata.data == MIRRORED_PUNTOCOMA){
+	 for(iterator=0; iterator<SIZE(data_m) && (status_m == _SS) ;iterator++){
+		 mydata.data_m = (mydata.data_m<<1) | (data_m[iterator]);
+		 if(mydata.data_m == MIRRORED_PUNTOCOMA){
 			 status_m = _PAN;
 		 }
 	 }
 	 if(status_m == _PAN){
 
-		 mydata.data = 0b00000; //aranco con una palabra en 0
-		 	 	 	 	 	 	 // El estado tiene que ser PAN , o FS      y el iterador tampoco se puede pasar de Data
+		 mydata.data_m = 0b00000; //aranco con una palabra en 0
+		 	 	 	 	 	 	 // El estado tiene que ser PAN , o FS      y el iterador tampoco se puede pasar de data_m
 		 for(shift_counter = 0; ( (status_m == _PAN) || (status_m == _FS)  )   && (iterator < MAX_CHARS)  ;       shift_counter++,iterator++){  //para cada character itero para formar la palabra
 
-			 mydata.data = mydata.data | (data[iterator]<<shift_counter); // voy creando 0b00001 la palabra
+			 mydata.data_m = mydata.data_m | (data_m[iterator]<<shift_counter); // voy creando 0b00001 la palabra
 			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 //                    ^-----
 			 if(shift_counter == (CHAR_LENGHT-1)){ // cuando el contador llega a la posicion 4 , pregunto que es la palabra
 				 parse_alphanumeric(mydata);
-				 mydata.data = 0b00000;
+				 mydata.data_m = 0b00000;
 				 shift_counter = -1; //por el post incremento del for cuando vuelve me lo deja en 0
 			 }
 		 }
@@ -226,8 +230,8 @@ void ptrToClock(void){
 	 }
 }
 
-void parse_alphanumeric(character data){
-	switch(data.data){
+void parse_alphanumeric(character data_m){
+	switch(data_m.data_m){
 		case CHAR_0:
 			write('0',status_m,writer);
 			break;

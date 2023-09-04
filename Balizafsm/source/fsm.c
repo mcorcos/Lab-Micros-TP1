@@ -71,6 +71,11 @@
 #define NUM_PIN 4
 #define NUM_USERS 10
 
+
+//def para timer
+#define _USING 1
+#define _NOT_USING 0
+
 //Definiciones de acciones del display
 #define WAITING 0
 #define MSG_SENT 1
@@ -97,6 +102,25 @@
 #define ADMIN_RESTART 6
 
 
+
+
+//definees de tiempo
+//Defines para el timer
+#define TIMEOUT_PRE_ID 90000
+#define TIMEOUT_PRE_PIN 45000
+#define TIMEOUT_ID_OK 30000
+#define TIMEOUT_MENU 60000
+#define TIMEOUT_CHANGE_PASSWORD 45000
+#define TIMEOUT_OPEN 5000
+#define TIMEOUT_ADMIN 45000
+#define TIMEOUT_NEW_ID 90000
+#define TIMEOUT_NEW_ID_OK 30000
+#define TIMEOUT_NEW_PIN 45000
+#define TIMEOUT_NEW_ADMIN 25000
+#define TIMEOUT_REMOVE 40000
+#define TIMEOUT_TIMEOUT 4000
+#define TIMEOUT_ERROR 1500
+#define TIMEOUT_BRIGHTNESS 40000
 /*******************************************************************************
  *  ENUMERATIONS, STRUCTURES AND TYPEDEFS
  ******************************************************************************/
@@ -127,10 +151,17 @@ static ENCODER_Type encoder;
 
 static tim_id_t timer;
 
-static int encoder_inter;
+static uint8_t encoder_inter;
 
 static bool magtek_inter;
 
+static uint8_t pre_state_fsm = 0;
+static uint8_t state_fsm = 0;
+
+
+static bool using_timer = false;
+
+static uint8_t waiting_id = 0;
 /*******************************************************************************
  *  FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -199,14 +230,15 @@ void change_password(char new_pass[], int user_count);
 int fsm(void) {
     static int user_count = 0, aux_user_count = 0, msg_sent = WAITING;
     static int i = 0;
-    static int waiting_id = 0, waiting_pin = 0, error = 0;
+    static int  waiting_pin = 0, error = 0;
+
     static char temp_pin[] = "0000", temp_id[] = "0000000000000000000";
     encoder_inter = encoderInterrup();
     if (encoder_inter) {
         encoder = getEncoder();
     }
     magtek_inter = magtek_iter();
-    static int pre_state_fsm = 0, state_fsm = 0;
+
     static user_t data = { {'0'}, {0}, 0, 0 }; //Variable que almacena la información ingresada
 
     if(!timer){
@@ -280,14 +312,16 @@ int fsm(void) {
     case PRE_ID: {
         //Estado en el que espero que ingresen todo el ID. Esto es si me mandan dígito por dígito.
         //Ver como me mandan los dígitos, si es que necesito un id_count para ver cuantos dígitos ingresaron o algo así.
-    	if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(120000), TIM_MODE_SINGLESHOT, callback_timer);
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_PRE_ID), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
                 pre_state_fsm = state_fsm;
                 state_fsm = TIMEOUT;
                 msg_sent = WAITING;
+				using_timer = _NOT_USING;
             }
             else {
                 if (magtek_inter) {
@@ -299,6 +333,7 @@ int fsm(void) {
 						pre_state_fsm = state_fsm;
 						state_fsm = BRIGHT;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 					}
 					else if (waiting_id) {
@@ -332,6 +367,7 @@ int fsm(void) {
                             state_fsm = IDLE;
                             msg_sent = WAITING;
                             timerStop(timer);
+                            using_timer = _NOT_USING;
                             clearEncoderPresiones();
                             clearEncoderGiros();
                         }
@@ -355,6 +391,7 @@ int fsm(void) {
 					state_fsm = ID;
 					msg_sent = WAITING;
 					timerStop(timer);
+					using_timer = _NOT_USING;
 				}
                 else if(!msg_sent){
                 	print_msg(temp_id, i);
@@ -365,23 +402,7 @@ int fsm(void) {
         break;
     }
     case ID: {
-        /*if (magtek_inter) {
-            pre_state_fsm = state_fsm;
-            magtek_inter = magtek_clear();
-        }
-        if (encoder_inter) {
-        	pre_state_fsm = state_fsm;
-        	if(encoder.cantPresion == BRIGHTNESS){
-				state_fsm = BRIGHT;
-				clearEncoderPresiones();
-				clearEncoderGiros();
-			}
-			encoder_inter = clearEncoderInter();
-			msg_sent = WAITING;
-        }
-        if(encoder.cantPresion != BRIGHTNESS){
-        	*/
-    	user_count = verify_id(data.id);
+        user_count = verify_id(data.id);
 			if (user_count != -1) {
 				pre_state_fsm = state_fsm;
 				state_fsm = ID_OK;
@@ -394,15 +415,16 @@ int fsm(void) {
 				user_count = 0;
 				msg_sent = WAITING;
 			}
-        //}
         break;
     }
     case ID_OK: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(20000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_ID_OK), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
+            	using_timer = _NOT_USING;
                 pre_state_fsm = state_fsm;
                 state_fsm = TIMEOUT;
                 msg_sent = WAITING;
@@ -418,6 +440,7 @@ int fsm(void) {
 							pre_state_fsm = state_fsm;
 							state_fsm = BRIGHT;
 							timerStop(timer);
+							using_timer = _NOT_USING;
 							clearEncoderPresiones();
 						}
                     	else{
@@ -425,6 +448,7 @@ int fsm(void) {
                             waiting_pin = 1;
                             msg_sent = WAITING;
                             timerStop(timer);
+                            using_timer = _NOT_USING;
                             clearEncoderPresiones();
                     	}
                     }
@@ -446,11 +470,13 @@ int fsm(void) {
         break;
     }
     case PRE_PIN: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(60000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_PRE_PIN), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
+            	using_timer = _NOT_USING;
                 pre_state_fsm = state_fsm;
                 state_fsm = TIMEOUT;
                 msg_sent = WAITING;
@@ -465,9 +491,10 @@ int fsm(void) {
 						pre_state_fsm = state_fsm;
 						state_fsm = BRIGHT;
 						clearEncoderPresiones();
+						timerStop(timer);
+						using_timer = _NOT_USING;
 					}
                 	else if (waiting_pin) {
-                		//msg_sent = WAITING;
                         pre_state_fsm = state_fsm;
                         if (encoder.cantPresion == OK) {
                         	msg_sent = WAITING;
@@ -498,6 +525,7 @@ int fsm(void) {
                             state_fsm = IDLE;
                             msg_sent = WAITING;
                             timerStop(timer);
+                            using_timer = _NOT_USING;
                             clearEncoderPresiones();
                             clearEncoderGiros();
                         }
@@ -523,6 +551,7 @@ int fsm(void) {
                     state_fsm = PIN;
                     msg_sent = WAITING;
                     timerStop(timer);
+                    using_timer = _NOT_USING;
                     i = 0;
                 }
                 else if(!msg_sent){
@@ -561,20 +590,23 @@ int fsm(void) {
         break;
     }
     case MENU:{
-    	if (!timerRunning(timer)) {
-			timerStart(timer, TIMER_MS2TICKS(20000), TIM_MODE_SINGLESHOT, callback_timer);
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+			timerStart(timer, TIMER_MS2TICKS(TIMEOUT_MENU), TIM_MODE_SINGLESHOT, callback_timer);
 		}
 		else {
 			if (timerExpired(timer)) {
+
 				pre_state_fsm = state_fsm;
 				state_fsm = IDLE;
 				user_count = 0;
 				msg_sent = WAITING;
+				using_timer = _NOT_USING;
 			}
 			else {
 				if (magtek_inter) {
 					pre_state_fsm = state_fsm;
-					magtek_inter = 0;
+					magtek_inter = magtek_clear();
 				}
 				if (encoder_inter) {
 					if (encoder.cantPresion == 1) {
@@ -582,6 +614,7 @@ int fsm(void) {
 						state_fsm = OPEN;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
 					}
@@ -589,6 +622,7 @@ int fsm(void) {
 						pre_state_fsm = state_fsm;
 						state_fsm = CHANGE_PASSWORD;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						msg_sent = WAITING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
@@ -599,6 +633,7 @@ int fsm(void) {
 						state_fsm = IDLE;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
 					}
@@ -607,6 +642,7 @@ int fsm(void) {
 						state_fsm = BRIGHT;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
 					}
@@ -621,8 +657,9 @@ int fsm(void) {
 		break;
     }
     case CHANGE_PASSWORD:{
-    	if (!timerRunning(timer)) {
-			timerStart(timer, TIMER_MS2TICKS(15000), TIM_MODE_SINGLESHOT, callback_timer);
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+			timerStart(timer, TIMER_MS2TICKS(TIMEOUT_CHANGE_PASSWORD), TIM_MODE_SINGLESHOT, callback_timer);
 		}
 		else {
 			if (timerExpired(timer)) {
@@ -630,6 +667,7 @@ int fsm(void) {
 				state_fsm = IDLE;
 				user_count = 0;
 				msg_sent = WAITING;
+				using_timer = _NOT_USING;
 			}
 			else {
 				if (magtek_inter || encoder_inter) {
@@ -639,6 +677,7 @@ int fsm(void) {
 						state_fsm = BRIGHT;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 					}
 					else if (waiting_pin) {
@@ -671,6 +710,7 @@ int fsm(void) {
 							state_fsm = IDLE;
 							msg_sent = WAITING;
 							timerStop(timer);
+							using_timer = _NOT_USING;
 							clearEncoderPresiones();
 							clearEncoderGiros();
 						}
@@ -695,9 +735,13 @@ int fsm(void) {
 					change_password(data.pin, user_count);
 					if(users[user_count].attribute == ADMIN_ATT){
 						state_fsm = ADMIN;
+						timerStop(timer);
+						using_timer = _NOT_USING;
 					}
 					else{
 						state_fsm = MENU;
+						timerStop(timer);
+						using_timer = _NOT_USING;
 					}
 					msg_sent = WAITING;
 				}
@@ -710,8 +754,11 @@ int fsm(void) {
 		break;
     }
     case OPEN: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(5000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_OPEN), TIM_MODE_SINGLESHOT, callback_timer);
+            turnOn_DebugLed_2();
+            turnOn_RedLed();
         }
         else {
             if (timerExpired(timer)) {
@@ -719,6 +766,9 @@ int fsm(void) {
                 state_fsm = IDLE;
                 user_count = 0;
                 msg_sent = WAITING;
+                using_timer = _NOT_USING;
+                turnOff_DebugLed_2();
+                turnOff_RedLed();
             }
             else {
                 if (magtek_inter || encoder_inter == BUTTON) {
@@ -726,6 +776,7 @@ int fsm(void) {
 						pre_state_fsm = state_fsm;
 						state_fsm = BRIGHT;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 					}
                 	clearEncoderPresiones();
                 	clearEncoderGiros();
@@ -734,7 +785,6 @@ int fsm(void) {
                 }
 
                 if (!msg_sent) {
-                    //Acá debería haber algo así como
                     print_msg("DOOR OPEN", MOVE); //---> FUNCION DEL DISPLAY.
                     msg_sent = MSG_SENT;
                 }
@@ -743,8 +793,9 @@ int fsm(void) {
         break;
     }
     case ADMIN: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(0000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_ADMIN), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
@@ -752,11 +803,12 @@ int fsm(void) {
                 state_fsm = IDLE;
                 user_count = 0;
                 msg_sent = WAITING;
+                using_timer = _NOT_USING;
             }
             else {
                 if (magtek_inter) {
                     pre_state_fsm = state_fsm;
-                    magtek_inter = 0;
+                    magtek_inter = magtek_clear();
                 }
                 if (encoder_inter) {
                     if (encoder.cantPresion == ADMIN_OPEN) {
@@ -764,6 +816,7 @@ int fsm(void) {
                         state_fsm = OPEN;
                         msg_sent = WAITING;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
                         clearEncoderPresiones();
                         clearEncoderGiros();
                     }
@@ -771,6 +824,7 @@ int fsm(void) {
 						pre_state_fsm = state_fsm;
 						state_fsm = CHANGE_PASSWORD;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						msg_sent = WAITING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
@@ -780,6 +834,7 @@ int fsm(void) {
                         pre_state_fsm = state_fsm;
                         state_fsm = ADD;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
                         msg_sent = WAITING;
                         clearEncoderPresiones();
                         clearEncoderGiros();
@@ -788,6 +843,7 @@ int fsm(void) {
                         pre_state_fsm = state_fsm;
                         state_fsm = REMOVE;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
                         msg_sent = WAITING;
                         waiting_id = 1;
                         clearEncoderPresiones();
@@ -798,6 +854,7 @@ int fsm(void) {
                         state_fsm = IDLE;
                         msg_sent = WAITING;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
                     }
@@ -806,6 +863,7 @@ int fsm(void) {
 						state_fsm = BRIGHT;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 						clearEncoderGiros();
 					}
@@ -834,29 +892,37 @@ int fsm(void) {
             pre_state_fsm = state_fsm;
             state_fsm = ERROR;
             msg_sent = WAITING;
+            timerStop(timer);
+            using_timer = _NOT_USING;
         }
         break;
     }
     case NEW_ID: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(45000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_NEW_ID), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
+            	using_timer = _NOT_USING;
                 pre_state_fsm = state_fsm;
                 state_fsm = IDLE;
                 user_count = 0;
                 msg_sent = WAITING;
             }
             else if (magtek_inter){
-            	pre_state_fsm = state_fsm;
-				state_fsm = NEW_PIN;
+
 				ptr = get_ID();
+				ptr+=8;
 				for (int i = 0; i < NUM_ID; i++) {
 					data.id[i] = *ptr;
 					++ptr;
 				}
 				magtek_inter = magtek_clear();
+            	timerStop(timer);
+            	using_timer = _NOT_USING;
+            	pre_state_fsm = state_fsm;
+				state_fsm = NEW_ID_OK;
 				waiting_id = 0;
             }
             else if(encoder_inter) {
@@ -866,6 +932,7 @@ int fsm(void) {
 					state_fsm = BRIGHT;
 					msg_sent = WAITING;
 					timerStop(timer);
+					using_timer = _NOT_USING;
 					clearEncoderPresiones();
 				}
                 else if (waiting_id) {
@@ -899,6 +966,8 @@ int fsm(void) {
                         msg_sent = WAITING;
                         clearEncoderPresiones();
                         clearEncoderGiros();
+                        timerStop(timer);
+                        using_timer = _NOT_USING;
                     }
 
                     if (i == NUM_ID) {
@@ -921,6 +990,8 @@ int fsm(void) {
             	state_fsm = NEW_ID_OK;
 				msg_sent = WAITING;
 				waiting_pin = 1;
+				timerStop(timer);
+				using_timer = _NOT_USING;
             }
             else if(!msg_sent){
             	msg_sent = MSG_SENT;
@@ -930,14 +1001,16 @@ int fsm(void) {
         break;
     }
     case NEW_ID_OK:{
-    	if (!timerRunning(timer)) {
-			timerStart(timer, TIMER_MS2TICKS(30000), TIM_MODE_SINGLESHOT, callback_timer);
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+			timerStart(timer, TIMER_MS2TICKS(TIMEOUT_NEW_ID_OK), TIM_MODE_SINGLESHOT, callback_timer);
 		}
 		else {
 			if (timerExpired(timer)) {
 				pre_state_fsm = state_fsm;
 				state_fsm = TIMEOUT;
 				msg_sent = WAITING;
+				using_timer = _NOT_USING;
 			}
 			else {
 				if (magtek_inter) {
@@ -950,6 +1023,7 @@ int fsm(void) {
 							pre_state_fsm = state_fsm;
 							state_fsm = BRIGHT;
 							timerStop(timer);
+							using_timer = _NOT_USING;
 							clearEncoderPresiones();
 						}
 						else{
@@ -957,6 +1031,7 @@ int fsm(void) {
 							waiting_pin = 1;
 							msg_sent = WAITING;
 							timerStop(timer);
+							using_timer = _NOT_USING;
 							clearEncoderPresiones();
 						}
 					}
@@ -978,8 +1053,9 @@ int fsm(void) {
     	break;
     }
     case NEW_PIN: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(15000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_NEW_PIN), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
@@ -987,6 +1063,7 @@ int fsm(void) {
                 state_fsm = IDLE;
                 user_count = 0;
                 msg_sent = WAITING;
+                using_timer = _NOT_USING;
             }
             else {
                 if (magtek_inter || encoder_inter) {
@@ -996,6 +1073,7 @@ int fsm(void) {
 						state_fsm = BRIGHT;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 					}
                     else if (waiting_pin) {
@@ -1028,7 +1106,7 @@ int fsm(void) {
                             pre_state_fsm = state_fsm;
                             state_fsm = IDLE;
                             msg_sent = WAITING;
-                            timerStop(timer);
+
                             clearEncoderPresiones();
                             clearEncoderGiros();
                         }
@@ -1056,6 +1134,8 @@ int fsm(void) {
 						print_msg("1 if admin 2 if not", MOVE);
 						msg_sent = MSG_SENT;
 					}
+					timerStop(timer);
+					using_timer = _NOT_USING;
 				}
 				else if(!msg_sent){
 					msg_sent = MSG_SENT;
@@ -1066,8 +1146,9 @@ int fsm(void) {
         break;
     }
     case NEW_ADMIN: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(15000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_NEW_ADMIN), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
@@ -1075,6 +1156,7 @@ int fsm(void) {
                 state_fsm = IDLE;
                 user_count = 0;
                 msg_sent = WAITING;
+                using_timer = _NOT_USING;
             }
             else {
                 if (encoder_inter || magtek_inter) {
@@ -1086,6 +1168,7 @@ int fsm(void) {
                         state_fsm = ADMIN;
                         msg_sent = WAITING;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
                     }
                     else if (encoder.cantPresion == 2) {
                         data.attribute = NOT_ADMIN_ATT;
@@ -1094,6 +1177,7 @@ int fsm(void) {
                         state_fsm = ADMIN;
                         msg_sent = WAITING;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
                     }
                     else if (encoder.cantPresion == RESTART) {
                         i = 0;
@@ -1101,12 +1185,14 @@ int fsm(void) {
                         state_fsm = IDLE;
                         msg_sent = WAITING;
                         timerStop(timer);
+                        using_timer = _NOT_USING;
                     }
                     else if (encoder.cantPresion == BRIGHTNESS) {
 						pre_state_fsm = state_fsm;
 						state_fsm = BRIGHT;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 					}
                     clearEncoderPresiones();
                     clearEncoderGiros();
@@ -1120,8 +1206,9 @@ int fsm(void) {
         break;
     }
     case REMOVE: {
-        if (!timerRunning(timer)) {
-            timerStart(timer, TIMER_MS2TICKS(15000), TIM_MODE_SINGLESHOT, callback_timer);
+        if ((!using_timer) &&( !timerRunning(timer))) {
+        	using_timer = _USING;
+            timerStart(timer, TIMER_MS2TICKS(TIMEOUT_REMOVE), TIM_MODE_SINGLESHOT, callback_timer);
         }
         else {
             if (timerExpired(timer)) {
@@ -1129,6 +1216,7 @@ int fsm(void) {
                 state_fsm = IDLE;
                 user_count = 0;
                 msg_sent = WAITING;
+                using_timer = _NOT_USING;
             }
             else {
                 if (encoder_inter || magtek_inter) {
@@ -1138,6 +1226,7 @@ int fsm(void) {
 						state_fsm = BRIGHT;
 						msg_sent = WAITING;
 						timerStop(timer);
+						using_timer = _NOT_USING;
 						clearEncoderPresiones();
 					}
                     else if (waiting_id) {
@@ -1167,9 +1256,14 @@ int fsm(void) {
                             state_fsm = IDLE;
                             msg_sent = WAITING;
                             timerStop(timer);
+                            using_timer = _NOT_USING;
                             clearEncoderPresiones();
                             clearEncoderGiros();
                         }
+                        if(encoder_inter == TURN){
+							msg_sent = WAITING;
+							temp_pin[3] = get_number();
+						}
 
                         if (i == 1) {
                             waiting_id = 0;
@@ -1183,6 +1277,8 @@ int fsm(void) {
 						state_fsm = REMOVE_ID;
 						pre_state_fsm = state_fsm;
 						msg_sent = WAITING;
+						timerStop(timer);
+						using_timer = _NOT_USING;
 					}
 					else if(!msg_sent){
 						msg_sent = MSG_SENT;
@@ -1210,38 +1306,58 @@ int fsm(void) {
         break;
     }
     case TIMEOUT: {
-        if (!msg_sent) {
-            print_msg("Timeout", MOVE);
-            msg_sent = MSG_SENT;
-        }
-        else{
-            pre_state_fsm = state_fsm;
-            state_fsm = IDLE;
-            msg_sent = WAITING;
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+			timerStart(timer, TIMER_MS2TICKS(TIMEOUT_TIMEOUT), TIM_MODE_SINGLESHOT, callback_timer);
+		}
+		else {
+			if (timerExpired(timer)) {
+				using_timer = _NOT_USING;
+				pre_state_fsm = state_fsm;
+				state_fsm = IDLE;
+				msg_sent = WAITING;
+			}
+			else if (!msg_sent) {
+				print_msg("Timeout", MOVE);
+				msg_sent = MSG_SENT;
+			}
         }
         break;
     }
     case ERROR: {
-        if (!msg_sent) {
-            print_msg("ERROR", MOVE);
-            msg_sent = MSG_SENT;
-        }
-		else{
-			pre_state_fsm = state_fsm;
-			state_fsm = IDLE;
-			msg_sent = WAITING;
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+			timerStart(timer, TIMER_MS2TICKS(TIMEOUT_ERROR), TIM_MODE_SINGLESHOT, callback_timer);
+			turnOn_DebugLed_2();
+		}
+		else {
+			if (timerExpired(timer)) {
+				pre_state_fsm = state_fsm;
+				state_fsm = IDLE;
+				msg_sent = WAITING;
+				turnOff_DebugLed_2();
+				using_timer = _NOT_USING;
+			}
+			else if (!msg_sent) {
+				print_msg("ERROR", MOVE);
+				msg_sent = MSG_SENT;
+			}
 		}
         break;
     }
     case BRIGHT:{
-    	if (!timerRunning(timer)) {
-    		timerStart(timer, TIMER_MS2TICKS(15000), TIM_MODE_SINGLESHOT, callback_timer);
+    	if ((!using_timer) &&( !timerRunning(timer))) {
+    		using_timer = _USING;
+    		timerStart(timer, TIMER_MS2TICKS(TIMEOUT_BRIGHTNESS), TIM_MODE_SINGLESHOT, callback_timer);
+    		turnOn_DebugLed_2();
 		}
 		else {
 			if (timerExpired(timer)) {
 				state_fsm = pre_state_fsm;
 				pre_state_fsm = BRIGHT;
 				msg_sent = WAITING;
+				using_timer = _NOT_USING;
+				turnOff_DebugLed_2();
 			}
 			if(encoder_inter == TURN){
 				change_brightness(encoder.cantGiros);
@@ -1250,8 +1366,10 @@ int fsm(void) {
 			else if(encoder_inter == BUTTON){
 				state_fsm = pre_state_fsm;
 				pre_state_fsm = BRIGHT;
-				msg_sent = WAITING;
+				//msg_sent = WAITING;
 				timerStop(timer);
+				using_timer = _NOT_USING;
+				turnOff_DebugLed_2();
 				clearEncoderPresiones();
 				clearEncoderGiros();
 			}
@@ -1259,9 +1377,11 @@ int fsm(void) {
     	break;
     }
     	default: {
+    		timerDelay(TIMER_MS2TICKS(5000));
 			pre_state_fsm = IDLE;
 			state_fsm = IDLE;
 			msg_sent = WAITING;
+			timerDelay(TIMER_MS2TICKS(5000));
 			break;
     	}
     }

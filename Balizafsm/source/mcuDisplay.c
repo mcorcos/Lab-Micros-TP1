@@ -140,6 +140,18 @@ void next_status() {
 
 
 void printMcuD(){
+		gpioWrite(PIN_BUS_0, 0);
+		gpioWrite(PIN_BUS_1, 0);
+		gpioWrite(PIN_BUS_2, 0);
+		gpioWrite(PIN_BUS_3, 0);
+		gpioWrite(PIN_BUS_4, 0);
+		gpioWrite(PIN_BUS_5, 0);
+		gpioWrite(PIN_BUS_6, 0);
+		gpioWrite(PIN_BUS_7, 0);
+
+		gpioWrite(PIN_STATUS_0, GET_BIT(display.status, 0));
+		gpioWrite(PIN_STATUS_1, GET_BIT(display.status, 1));
+
 	switch(display.status){
 
 		case D0:
@@ -197,8 +209,6 @@ void printMcuD(){
 			gpioWrite(PIN_BUS_7, 0);
 
 		}
-	gpioWrite(PIN_STATUS_0, GET_BIT(display.status, 0));
-	gpioWrite(PIN_STATUS_1, GET_BIT(display.status, 1));
 
 }
  void modeToDisplay(int mode){

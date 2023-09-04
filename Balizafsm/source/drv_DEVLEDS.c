@@ -1,19 +1,7 @@
-/***************************************************************************//**
-  @file     board.h
-  @brief    Board management
-  @author   G4
- ******************************************************************************/
-
-#ifndef _drv_DEVBOARD_H_
-#define _drv_DEVBOARD_H_
-
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
-#include "gpio.h"
-#include "board.h"
-#include <stdbool.h>
-
+#include "drv_DEVLEDS.h"
 
  /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
@@ -28,29 +16,69 @@
 /*******************************************************************************
  * VARIABLE PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
-/*******************************************************************************
- * function PROTOTYPES WITH local SCOPE
- ******************************************************************************/
+
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
 
 
-void init_DEVBOARD(void);
-void turnOn_ErrorLed(void);
-void turnOn_DebugLed_1(void);
-void turnOff_DebugLed_1(void);
-void turnOn_DebugLed_2(void);
-void turnOff_DebugLed_2(void);
+void init_DEVLED(void){
+
+	gpioMode(DEV_LED_STATUS_0,OUTPUT);
+	gpioMode(DEV_LED_STATUS_1,OUTPUT);
+
+
+	//Blink led 1
+	turnOn_D1Led();
+	turnOff_D1Led();
+
+	//Blink led 2
+	turnOn_D2Led();
+	turnOff_D2Led();
+
+	//Blink led 3
+	turnOn_D3Led();
+	turnOff_D3Led();
 
 
 
+	//Blink led 1
+	turnOn_D1Led();
+	turnOff_D1Led();
+
+	//Blink led 2
+	turnOn_D2Led();
+	turnOff_D2Led();
+
+	//Blink led 3
+	turnOn_D3Led();
+	turnOff_D3Led();
 
 
 
-#endif // _drv_DEVBOARD_H_
+}
 
-
-
-
-
+void turnOn_D1Led(void){
+	gpioWrite(DEV_LED_STATUS_0,true);
+	gpioWrite(DEV_LED_STATUS_1,false);
+}
+void turnOn_D2Led(void){
+	gpioWrite(DEV_LED_STATUS_0,false);
+	gpioWrite(DEV_LED_STATUS_1,true);
+}
+void turnOn_D3Led(void){
+	gpioWrite(DEV_LED_STATUS_0,true);
+	gpioWrite(DEV_LED_STATUS_1,true);
+}
+void turnOff_D1Led(void){
+	gpioWrite(DEV_LED_STATUS_0,false);
+	gpioWrite(DEV_LED_STATUS_1,false);
+}
+void turnOff_D2Led(void){
+	gpioWrite(DEV_LED_STATUS_0,false);
+	gpioWrite(DEV_LED_STATUS_1,false);
+}
+void turnOff_D3Led(void){
+	gpioWrite(DEV_LED_STATUS_0,false);
+	gpioWrite(DEV_LED_STATUS_1,false);
+}

@@ -20,6 +20,7 @@
 #include "timer.h"
 #include "drv_DEVBOARD.h"
 #include "display.h"
+#include "drv_DEVLEDS.h"
 
 /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
@@ -34,6 +35,7 @@
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init (void)
 {
+	init_DEVLED();
 	NVIC_SetPriority(PD,0);
 	NVIC_SetPriority(PA,1);
 	NVIC_SetPriority(PB,1);
@@ -45,6 +47,7 @@ void App_Init (void)
 	drv_ENCODER_init();
 	init_DEVBOARD();
 	displayInit();
+
 
 
 }

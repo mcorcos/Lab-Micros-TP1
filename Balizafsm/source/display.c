@@ -24,20 +24,44 @@ void displayInit(){
 
 void change_brightness(int value){
 	static int brighnes_value = INIT_BRIGHNESS ;
-	int new_brighnes_value = 0;
+	static int prev_brightness = 0;
 
-	new_brighnes_value = brighnes_value + value;
 
-	if(new_brighnes_value < MIN_BRIGHNESS){
-		brighnes_value = MIN_BRIGHNESS; //MÁX
+	if(brighnes_value == MAX_BRIGHNESS){
+
+		if(value<prev_brightness){
+			brighnes_value = MID_BRIGHNESS;
+		}
+
 	}
-	else if(new_brighnes_value> MAX_BRIGHNESS){
-		brighnes_value = MAX_BRIGHNESS;
+	else if(brighnes_value == MID_BRIGHNESS){
+
+		if(value>prev_brightness){
+			brighnes_value = MAX_BRIGHNESS;
+
+		}
+		else if(value<prev_brightness){
+			brighnes_value = MIN_BRIGHNESS;
+
+		}
+
 	}
-	else{
-		brighnes_value = new_brighnes_value;
+	else if(brighnes_value == MIN_BRIGHNESS){
+
+		if(value>prev_brightness){
+			brighnes_value = MID_BRIGHNESS;
+
+		}
 	}
+
+	prev_brightness = value;
 	brighnessDisplay(brighnes_value);
+
+
+
+
+
+
 
 }
 

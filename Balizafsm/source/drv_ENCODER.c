@@ -12,6 +12,7 @@
 #include "board.h"
 #include "drv_K64.h"
 #include "drv_DEVBOARD.h"
+#include "drv_DEVLEDS.h"
 
 
 /*******************************************************************************
@@ -108,17 +109,18 @@ void encoderEvent(void) {
 
 		// Compara el nuevo estado con el estado anterior para determinar la dirección
 		if (encoder_a.newState == ((encoder_a.prevState + 1) & STATE_11)) {
-			turnOn_GreenLed();
+			//turnOn_GreenLed();
 			encoder_a.cantGiros++;
 			}
 		else if (encoder_a.newState == ((encoder_a.prevState - 1) & STATE_11)) {
-			turnOn_RedLed();
+			//turnOn_RedLed();
 			encoder_a.cantGiros--;
 		}
 
-		timerStart(antiBouncingTimer,TIMER_MS2TICKS(120),TIM_MODE_SINGLESHOT,detecTurn);
+		timerStart(antiBouncingTimer,TIMER_MS2TICKS(80),TIM_MODE_SINGLESHOT,detecTurn);
 
 		encoderInter = TURN;
+		turnOn_D1Led();
 	}
 
 }
@@ -178,7 +180,7 @@ void readStatus(){
 	encoder_a.prevState = (stateA << 1) | stateB;
 }
 static void fun(void){
-	//turnOn_DebugLed_1();
+
 }
 uint8_t encoderInterrup (void){
 	return encoderInter;
@@ -205,6 +207,7 @@ void clearEncoderPresiones (void){
 void check_expired(void){
 	if(timerExpired(buttonPressTimer)){
 			encoderInter = BUTTON;
+			turnOn_D2Led();
 			turnOff_DebugLed_1();
 
 		}

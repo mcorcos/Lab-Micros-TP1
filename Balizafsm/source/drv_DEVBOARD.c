@@ -44,8 +44,8 @@ void init_DEVBOARD(void){
 	gpioMode(DEBUG_PIN_1,OUTPUT);
 	gpioWrite(DEBUG_PIN_1,false);
 
-	//gpioMode(DEBUG_PIN_2,OUTPUT);
-	//gpioWrite(DEBUG_PIN_2,false);
+	gpioMode(DEBUG_PIN_2,OUTPUT);
+	gpioWrite(DEBUG_PIN_2,true);
 
 }
 
@@ -73,10 +73,10 @@ void init_DEVBOARD(void){
  //segundo debug de pin
 
  void turnOn_DebugLed_2(void){
-	 gpioWrite(DEBUG_PIN_2,true);
+	 gpioWrite(DEBUG_PIN_2,false);
  }
 
  void turnOff_DebugLed_2(void){
-	 gpioWrite(DEBUG_PIN_2,false);
+	 gpioWrite(DEBUG_PIN_2,true);
  }
 

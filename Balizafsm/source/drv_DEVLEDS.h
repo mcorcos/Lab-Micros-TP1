@@ -1,29 +1,28 @@
 /***************************************************************************//**
-  @file     SysTick.h
-  @brief    SysTick driver
-  @author   Nicol�s Magliola
+  @file     board.h
+  @brief    Board management
+  @author   G4
  ******************************************************************************/
 
-#ifndef _SYSTICK_H_
-#define _SYSTICK_H_
+
+#ifndef _X_H_
+#define _X_H_
 
 /*******************************************************************************
  * INCLUDE HEADER FILES
  ******************************************************************************/
+#include<stdbool.h>
+#include "board.h"
+#include "timer.h"
+#include "gpio.h"
 
-#include <stdbool.h>
-#include "MK64F12.h"
-#include "hardware.h"
-
-
-/*******************************************************************************
+ /*******************************************************************************
  * CONSTANT AND MACRO DEFINITIONS USING #DEFINE
  ******************************************************************************/
 
-#define SYSTICK_ISR_FREQUENCY_HZ 1000U  //estaba en 1000
 
 
-/*******************************************************************************
+ /*******************************************************************************
  * ENUMERATIONS AND STRUCTURES AND TYPEDEFS
  ******************************************************************************/
 
@@ -34,16 +33,20 @@
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
  ******************************************************************************/
+void init_DEVLED(void);
+void turnOn_D1Led(void);
+void turnOn_D2Led(void);
+void turnOn_D3Led(void);
+void turnOff_D1Led(void);
+void turnOff_D2Led(void);
+void turnOff_D3Led(void);
 
-/**
- * @brief Initialize SysTic driver
- * @param funcallback Function to be call every SysTick
- * @return Initialization and registration succeed
- */
-bool SysTick_Init (void (*funcallback)(void));
+#endif // _X_H_
 
 
-/*******************************************************************************
- ******************************************************************************/
 
-#endif // _SYSTICK_H_
+
+
+
+
+
