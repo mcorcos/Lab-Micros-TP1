@@ -128,15 +128,18 @@ void write(char character , uint8_t state_m, uint8_t iterator);
   }
 
 void ptrToClock(void){
+	turnOn_TimePin();
 	if((state_m == _READING )){
 	bool new_data = !(gpioRead(PIN_MAGTEK_DATA));
 	data_m[bit_counter++] = new_data;
 	}
-
+	turnOff_TimePin();
 }
  //ISR CUANDO EL ENABLE CAMBIE DE ESTADO
 
  void ptrToEnable(void){
+
+	 turnOn_TimePin();
 	 turnOff_RedLed();
 	 if((state_m == _WAITING)){
 
@@ -166,6 +169,7 @@ void ptrToClock(void){
 
 
 	 }
+	 turnOff_TimePin();
  }
 
 

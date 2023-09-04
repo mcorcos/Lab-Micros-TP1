@@ -40,6 +40,7 @@
 #define PIN_PTB_11		PORTNUM2PIN(PB,11)
 #define PIN_PTB_24		PORTNUM2PIN(PB,24)
 #define PIN_PTB_25		PORTNUM2PIN(PB,25)
+#define PIN_PTE_24		PORTNUM2PIN(PE,24)
 
 // On Board User Switches
 #define PIN_SW2         PORTNUM2PIN(PC,6)
@@ -53,6 +54,9 @@
 #define DEBUG_PIN_1 PIN_PTC_10
 #define DEBUG_PIN_2 PIN_PTB_11
 #define ERROR_PIN_1	PIN_PTB_25
+#define TIME_PIN PIN_PTE_24
+
+
 
 //Defines ENCODER
 

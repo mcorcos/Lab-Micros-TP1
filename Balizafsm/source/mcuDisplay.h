@@ -27,8 +27,8 @@ typedef struct {
 } display_t;
 
 #define MIN_BRIGHNESS	1
-#define MID_BRIGHNESS	12
-#define MAX_BRIGHNESS	25
+#define MID_BRIGHNESS	4
+#define MAX_BRIGHNESS	8
 #define INIT_BRIGHNESS	1
 
 #define MOVE	-1

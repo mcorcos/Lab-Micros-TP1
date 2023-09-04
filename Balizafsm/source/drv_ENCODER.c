@@ -96,6 +96,8 @@ void drv_ENCODER_init(void) {
 }
 
 void encoderEvent(void) {
+	turnOn_TimePin();
+
 	stateA = gpioRead(PORT_ENCODER_RCHA);
 	stateB = gpioRead(PORT_ENCODER_RCHB);
 
@@ -123,6 +125,7 @@ void encoderEvent(void) {
 		turnOn_D1Led();
 	}
 
+	turnOff_TimePin();
 }
 static void detecTurn(void){
 
@@ -155,7 +158,7 @@ static void detecTurn(void){
 
 
 void ptrToRSwitch(void){
-
+	turnOn_TimePin();
 	if(!timerRunning(antiInterrup)){
 		timerStart(antiInterrup,TIMER_MS2TICKS(250),TIM_MODE_SINGLESHOT,fun);
 		if(!timerRunning(buttonPressTimer)){
@@ -167,6 +170,7 @@ void ptrToRSwitch(void){
 			encoder_a.cantPresion++;
 		}
 	}
+	turnOff_TimePin();
 
 }
 

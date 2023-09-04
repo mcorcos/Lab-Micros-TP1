@@ -71,6 +71,7 @@ void initMcuDisplay(void){
 
 /*	updateMcuDisplay Se debe llamar constantemente para cambiar el display que se muestra*/
 void updateMcuDisplay (void){
+
 	int static brighness_counter = 0;
 	// TIME_DISPLAY: frecuencia que cambia el display que se muestra
 	if(brighness_counter == 0){
@@ -79,6 +80,7 @@ void updateMcuDisplay (void){
 		brighness_counter = display.brighness;
 	}
 	--brighness_counter;
+
 }
 
 
