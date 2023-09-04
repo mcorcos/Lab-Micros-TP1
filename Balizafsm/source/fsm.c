@@ -181,6 +181,7 @@ static char temp_pin[] = "0000", temp_id[] = "0000000000000000000";
   */
 int verify_id(char data[]);
 
+
 /**
  * @brief Verifies that the entered PIN is correct for the user being used.
  * @param data is the PIN that needs to be verified.
@@ -233,7 +234,7 @@ void callback_timer(void);
 void change_password(char new_pass[], int user_count);
 
 /*******************************************************************************
- *  GLOBAL FUNCTIONS DEFINITIONS
+ *  GLOBAL FUNCTIONS DEFINITIONS // finish
  ******************************************************************************/
 int fsm(void) {
 
@@ -397,7 +398,7 @@ int fsm(void) {
 					timerStop(timer);
 					using_timer = _NOT_USING;
 				}
-                else if(!msg_sent){
+                else if((!msg_sent) && (state_fsm != IDLE)){
                 	print_msg(temp_id, i);
 					msg_sent = MSG_SENT;
 				}
@@ -558,7 +559,7 @@ int fsm(void) {
                     using_timer = _NOT_USING;
                     i = 0;
                 }
-                else if(!msg_sent){
+                else if((!msg_sent)&& (state_fsm != IDLE)){
 					print_msg(temp_pin, MOVE);
 					msg_sent = MSG_SENT;
 				}
@@ -652,7 +653,7 @@ int fsm(void) {
 					}
 					encoder_inter = clearEncoderInter();
 				}
-				else if(!msg_sent){
+				else if((!msg_sent)&& (state_fsm != IDLE)){
 					print_msg("1 to open 2 to change pin", MOVE);
 					msg_sent = MSG_SENT;
 				}
@@ -749,7 +750,7 @@ int fsm(void) {
 					}
 					msg_sent = WAITING;
 				}
-				else if(!msg_sent){
+				else if((!msg_sent)&& (state_fsm != IDLE)){
 					msg_sent = MSG_SENT;
 					print_msg(temp_pin, MOVE);
 				}
@@ -873,7 +874,7 @@ int fsm(void) {
 					}
                     encoder_inter = clearEncoderInter();
                 }
-                else if(!msg_sent){
+                else if((!msg_sent)&& (state_fsm != IDLE)){
                 	print_msg("1 to open 2 to change pin 3 to add 4 to remove", MOVE);
                 	msg_sent = MSG_SENT;
                 }
@@ -926,7 +927,12 @@ int fsm(void) {
             	timerStop(timer);
             	using_timer = _NOT_USING;
             	pre_state_fsm = state_fsm;
-				state_fsm = NEW_ID_OK;
+				if(verify_id(data.id) == -1){
+					state_fsm = NEW_ID_OK;
+				}
+				else{
+					state_fsm = ADMIN;
+				}
 				waiting_id = 0;
             }
             else if(encoder_inter) {
@@ -990,14 +996,19 @@ int fsm(void) {
             }
 
             if(!waiting_id){
-            	//Fijarse si entra aca entrando con la magtek
             	state_fsm = NEW_ID_OK;
+            	if(verify_id(data.id) == -1){
+					state_fsm = NEW_ID_OK;
+				}
+				else{
+					state_fsm = ADMIN;
+				}
 				msg_sent = WAITING;
 				waiting_pin = 1;
 				timerStop(timer);
 				using_timer = _NOT_USING;
             }
-            else if(!msg_sent){
+            else if((!msg_sent)&& (state_fsm != ADMIN)){
             	msg_sent = MSG_SENT;
             	print_msg(temp_id, i);
             }
@@ -1141,7 +1152,7 @@ int fsm(void) {
 					timerStop(timer);
 					using_timer = _NOT_USING;
 				}
-				else if(!msg_sent){
+				else if((!msg_sent)&& (state_fsm != IDLE)){
 					msg_sent = MSG_SENT;
 					print_msg(temp_pin, MOVE);
 				}
@@ -1284,7 +1295,7 @@ int fsm(void) {
 						timerStop(timer);
 						using_timer = _NOT_USING;
 					}
-					else if(!msg_sent){
+					else if((!msg_sent)&& (state_fsm != IDLE)){
 						msg_sent = MSG_SENT;
 						print_msg(temp_pin, MOVE);
 					}

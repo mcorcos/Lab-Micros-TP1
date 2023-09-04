@@ -108,10 +108,7 @@ void timerStart(tim_id_t id, ttick_t ticks, uint8_t mode, tim_callback_t callbac
     if ((id < timers_cant) && (mode < CANT_TIM_MODES))
 #endif // TIMER_DEVELOPMENT_MODE
     {
-        // ****** COMPLETAR ******
-        // disable timer
-        // configure timer
-        // enable timer
+
 
     	timer_t new_timer;
     	bool was_running[TIMERS_MAX_CANT]={false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
@@ -131,8 +128,7 @@ void timerStart(tim_id_t id, ttick_t ticks, uint8_t mode, tim_callback_t callbac
     	new_timer.mode = mode;
     	new_timer.expired = 0;
 
-    	timers[id] = new_timer;	//el id es timerGetId. Hay que llamarlo antes de entrr a timerStart
-
+    	timers[id] = new_timer;
     	for(tim_id_t i=0;i<timers_cant;i++)
 		{
     		if(was_running[i] || id==i)
@@ -144,9 +140,6 @@ void timerStart(tim_id_t id, ttick_t ticks, uint8_t mode, tim_callback_t callbac
 
 void timerStop(tim_id_t id)
 {
-    // ****** COMPLETAR ******
-    // Apago el timer
-    // y bajo el flag
 
 	timers[id].running = false;
 	timers[id].cnt = timers[id].period;
@@ -156,9 +149,7 @@ void timerStop(tim_id_t id)
 
 bool timerExpired(tim_id_t id)
 {
-    // ****** COMPLETAR ******
-    // Verifico si expiró el timer
-    // y bajo el flag
+
 	if(timers[id].expired)
 	{
 		timers[id].expired = 0;
