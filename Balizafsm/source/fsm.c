@@ -162,6 +162,14 @@ static uint8_t state_fsm = 0;
 static bool using_timer = false;
 
 static uint8_t waiting_id = 0;
+static uint8_t  aux_user_count = 0;
+static int8_t user_count = 0;
+static uint8_t msg_sent = WAITING;
+static uint8_t i = 0;
+static uint8_t  waiting_pin = 0;
+static uint8_t error = 0;
+
+static char temp_pin[] = "0000", temp_id[] = "0000000000000000000";
 /*******************************************************************************
  *  FUNCTION PROTOTYPES FOR PRIVATE FUNCTIONS WITH FILE LEVEL SCOPE
  ******************************************************************************/
@@ -228,11 +236,7 @@ void change_password(char new_pass[], int user_count);
  *  GLOBAL FUNCTIONS DEFINITIONS
  ******************************************************************************/
 int fsm(void) {
-    static int user_count = 0, aux_user_count = 0, msg_sent = WAITING;
-    static int i = 0;
-    static int  waiting_pin = 0, error = 0;
 
-    static char temp_pin[] = "0000", temp_id[] = "0000000000000000000";
     encoder_inter = encoderInterrup();
     if (encoder_inter) {
         encoder = getEncoder();
