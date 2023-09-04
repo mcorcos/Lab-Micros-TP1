@@ -34,12 +34,18 @@
 /* Función que se llama 1 vez, al comienzo del programa */
 void App_Init (void)
 {
+	NVIC_SetPriority(PD,0);
+	NVIC_SetPriority(PA,1);
+	NVIC_SetPriority(PB,1);
+	NVIC_SetPriority(PC,1);
+	NVIC_SetPriority(PE,1);
 	init_K64Leds();
 	initMagtek();
 	timerInit();
 	drv_ENCODER_init();
 	init_DEVBOARD();
 	displayInit();
+
 
 }
 

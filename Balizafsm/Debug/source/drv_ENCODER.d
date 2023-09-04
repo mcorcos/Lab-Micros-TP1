@@ -5,7 +5,7 @@ source/drv_ENCODER.o source/drv_ENCODER.d: ../source/drv_ENCODER.c \
  ../SDK/startup/hardware.h ../SDK/CMSIS/fsl_device_registers.h \
  ../SDK/CMSIS/MK64F12.h ../SDK/CMSIS/MK64F12_features.h \
  ../SDK/CMSIS/core_cm4.h ../source/gpio.h ../source/timer.h \
- ../source/board.h ../source/drv_K64.h
+ ../source/board.h ../source/drv_K64.h ../source/drv_DEVBOARD.h
 
 ../source/drv_ENCODER.h:
 
@@ -38,3 +38,5 @@ source/drv_ENCODER.o source/drv_ENCODER.d: ../source/drv_ENCODER.c \
 ../source/board.h:
 
 ../source/drv_K64.h:
+
+../source/drv_DEVBOARD.h:

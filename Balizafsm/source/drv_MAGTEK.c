@@ -11,6 +11,8 @@
  ******************************************************************************/
 #include <stdio.h>
 #include "drv_MAGTEK.h"
+#include "timer.h"
+
 
 
 
@@ -84,7 +86,11 @@ static id_number my_id_number;
 
 //event
 static bool magtek_interrupt = false;
+static bool magtek_card_ready = false;
 
+
+//timer
+static tim_id_t timer_check_expired_magtek;
 
 /*******************************************************************************
  * VARIABLE FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -93,6 +99,7 @@ void flush(void);
 void parse(void);
 void parse_alphanumeric(character data);
 void parse_PAN2NUM(void);
+void check_card_ready(void);
 void write(char character , uint8_t state_m, uint8_t iterator);
 /*******************************************************************************
  * FUNCTION PROTOTYPES WITH GLOBAL SCOPE
@@ -102,7 +109,6 @@ void write(char character , uint8_t state_m, uint8_t iterator);
 
 	  //Pines necesarios
 
-	  turnOn_GreenLed(); //Prendo led verde
 
 	  gpioMode(PIN_MAGTEK_ENABLE,INPUT);
 	  gpioMode(PIN_MAGTEK_CLOCK,INPUT);
@@ -112,9 +118,9 @@ void write(char character , uint8_t state_m, uint8_t iterator);
 	  gpioIRQ(PIN_MAGTEK_ENABLE,PORT_eInterruptEither,ptrToEnable);
 	  gpioIRQ(PIN_MAGTEK_CLOCK,PORT_eInterruptFalling,ptrToClock); //Por el moemnto solo necesito la interrupcion de clock
 
+	  timer_check_expired_magtek = timerGetId();
 
-
-	  turnOff_GreenLed();//apago led verde
+	  timerStart(timer_check_expired_magtek,TIMER_MS2TICKS(5),TIM_MODE_PERIODIC,check_card_ready);
 
 
 
@@ -145,9 +151,8 @@ void ptrToClock(void){
 		 //interpretar
 		 parse();
 
-
 		 //prendo el flag!!!1
-		 magtek_interrupt = true;
+
 
 		 //ctadores en 0
 		 bit_counter=0;
@@ -157,8 +162,20 @@ void ptrToClock(void){
 		 //original state_ms
 		 status_m = _SS;
 		 state_m = _WAITING;
+
+		 magtek_card_ready = true;
 	 }
  }
+
+
+ void check_card_ready(void){
+	 if(magtek_card_ready){
+		 magtek_interrupt = true;
+		 magtek_card_ready = false;
+	 }
+ }
+
+
 
 
  void flush(void){

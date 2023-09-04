@@ -11,6 +11,7 @@
 #include "drv_ENCODER.h"
 #include "board.h"
 #include "drv_K64.h"
+#include "drv_DEVBOARD.h"
 
 
 /*******************************************************************************
@@ -96,17 +97,27 @@ void drv_ENCODER_init(void) {
 void encoderEvent(void) {
 	stateA = gpioRead(PORT_ENCODER_RCHA);
 	stateB = gpioRead(PORT_ENCODER_RCHB);
+
+
+
 	if(!timerRunning(antiBouncingTimer)){
+		turnOff_GreenLed();
+		turnOff_RedLed();
+
 		encoder_a.newState = (stateA << 1) | stateB;  // Calcula el nuevo estado
 
 		// Compara el nuevo estado con el estado anterior para determinar la dirección
 		if (encoder_a.newState == ((encoder_a.prevState + 1) & STATE_11)) {
+			turnOn_GreenLed();
 			encoder_a.cantGiros++;
 			}
 		else if (encoder_a.newState == ((encoder_a.prevState - 1) & STATE_11)) {
+			turnOn_RedLed();
 			encoder_a.cantGiros--;
 		}
-		timerStart(antiBouncingTimer,TIMER_MS2TICKS(200),TIM_MODE_SINGLESHOT,detecTurn);
+
+		timerStart(antiBouncingTimer,TIMER_MS2TICKS(120),TIM_MODE_SINGLESHOT,detecTurn);
+
 		encoderInter = TURN;
 	}
 
@@ -135,54 +146,7 @@ static void detecTurn(void){
 	 GirIzq  10   _DOS
 
 
-
-	switch(encoder_a.newState){
-		case(STATE_00):
-				if(encoder_a.prevState == STATE_01){
-					encoder_a.cantGiros++;
-				}
-				else if(encoder_a.prevState == STATE_10){
-					encoder_a.cantGiros--;
-				}
-				break;
-		case(STATE_01):
-				if(encoder_a.prevState == STATE_11){
-					//encoder_a.cantGiros++;
-				}
-				else if(encoder_a.prevState == STATE_00){
-					//encoder_a.cantGiros--;
-				}
-				break;
-		case(STATE_10):
-				if(encoder_a.prevState == STATE_00){
-					//encoder_a.cantGiros++;
-				}
-				else if(encoder_a.prevState == STATE_11){
-					//encoder_a.cantGiros--;
-				}
-				break;
-		case(STATE_11):
-				if(encoder_a.prevState == STATE_10){
-					encoder_a.cantGiros++;
-				}
-				else if(encoder_a.prevState == STATE_01){
-					encoder_a.cantGiros--;
-				}
-				break;
-
-	}*/
-
-
-/*	encoder_a.newState = (stateA << 1) | stateB;  // Calcula el nuevo estado
-
-	// Compara el nuevo estado con el estado anterior para determinar la dirección
-	if (encoder_a.newState == ((encoder_a.prevState + 1) & STATE_11)) {
-		encoder_a.cantGiros++;
-		}
-	else if (encoder_a.newState == ((encoder_a.prevState - 1) & STATE_11)) {
-		encoder_a.cantGiros--;
-	}
-	encoder_a.prevState = encoder_a.newState;*/
+*/
 
 }
 
@@ -194,6 +158,7 @@ void ptrToRSwitch(void){
 		timerStart(antiInterrup,TIMER_MS2TICKS(250),TIM_MODE_SINGLESHOT,fun);
 		if(!timerRunning(buttonPressTimer)){
 			encoder_a.cantPresion = 1;
+			turnOn_DebugLed_1();
 			timerStart(buttonPressTimer,TIMER_MS2TICKS(1500),TIM_MODE_SINGLESHOT,buttonPress);
 		}
 		else if(timerRunning(buttonPressTimer)){
@@ -204,7 +169,7 @@ void ptrToRSwitch(void){
 }
 
 static void buttonPress(void){
-	//turnOn_DebugLed_1();
+
 }
 
 void readStatus(){
@@ -240,6 +205,8 @@ void clearEncoderPresiones (void){
 void check_expired(void){
 	if(timerExpired(buttonPressTimer)){
 			encoderInter = BUTTON;
+			turnOff_DebugLed_1();
+
 		}
 }
 

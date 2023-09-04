@@ -81,7 +81,7 @@ bool gpioIRQ (pin_t pin, uint8_t irqMode, pinIrqFun_t irqFun){
 	PORT_Type* port = PORT_PTRS[PIN2PORT(pin)];
 	if(irqMode < CANT_PORTS_IRQ_MODES){// chequeo que el modo sea correcto, que no sea mayor a 12
 		NVIC_EnableIRQ(PORTS_IRQ[PIN2PORT(pin)]); //Enable PORTA interrupt on NVIC
-		NVIC_SetPriority(PORTS_IRQ[PIN2PORT(pin)],0);
+		//NVIC_SetPriority(PORTS_IRQ[PIN2PORT(pin)],0);
 		port->PCR[PIN2NUM(pin)]|=PORT_PCR_IRQC(irqMode);
 		PTRS_TO_FUN[(PIN2PORT(pin)*PORT_PCR_COUNT) + PIN2NUM(pin)] = irqFun;
 		return 1;

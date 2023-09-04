@@ -22,7 +22,7 @@
 
 //	Agregar nuevo texto
 void displayInit(void);
-void print_msg(char* arr_new_text);
+void print_msg(char* arr_new_text, int mode);
 void change_brightness(int value);
 
 #endif /* DISPLAY_H_ */

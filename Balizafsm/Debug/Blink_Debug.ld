@@ -5,7 +5,7 @@
  * Generated linker script file for MK64FN1M0xxx12
  * Created from linkscript.ldt by FMCreateLinkLibraries
  * Using Freemarker v2.3.23
- * MCUXpresso IDE v10.2.0 [Build 759] [2018-05-15]  on Sep 2, 2023 9:30:09 PM
+ * MCUXpresso IDE v10.2.0 [Build 759] [2018-05-15]  on Sep 3, 2023 10:24:06 PM
  */
 
 INCLUDE "Blink_Debug_library.ld"

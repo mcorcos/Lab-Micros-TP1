@@ -23,11 +23,14 @@ typedef struct {
 	uint8_t status;
 	int text_len;
 	int brighness;
+	int mode;
 } display_t;
 
 #define MIN_BRIGHNESS	1
 #define MAX_BRIGHNESS	8
 #define INIT_BRIGHNESS	5
+
+#define MOVE	-1
 
 /*	1ms	no titila
  * 	4ms no titila
@@ -42,6 +45,7 @@ void updateMcuDisplay (void);
 void textToDisplay(int index, uint8_t letter);
 void textLenDisplay(int len);
 void brighnessDisplay(int value_brighness);
+void modeToDisplay(int mode);
 
 
 

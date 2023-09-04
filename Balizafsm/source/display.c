@@ -7,7 +7,6 @@
 
 
 #include "display.h"
-//#include "mcuDisplay.h"
 #include "alphabet.h"
 
 
@@ -44,16 +43,16 @@ void change_brightness(int value){
 
 /********************************************************************************/
 
-void print_msg(char* arr_new_text) {
+void print_msg(char* arr_new_text, int mode) {
 
 	int counter = 0;
 	static int len_arr = 0;
 	clear_text(LEN_TEXT);
 	len_arr = arr_len(arr_new_text);
 	textLenDisplay(len_arr);
+	modeToDisplay(mode);
 
 	while (counter < len_arr) {
-
 		textToDisplay(counter +4, translateChar(arr_new_text[counter]));
 		++counter;
 	}

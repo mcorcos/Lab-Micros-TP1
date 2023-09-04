@@ -46,6 +46,7 @@ void initMcuDisplay(void){
 	display.status = D0;
 	display.text_len = 0;
 	display.brighness = INIT_BRIGHNESS; //Brillo máximo
+	display.mode = MOVE;
 	//	Inicializo los puertos.
 	gpioMode(PIN_BUS_0, OUTPUT);
 	gpioMode(PIN_BUS_1, OUTPUT);
@@ -85,21 +86,27 @@ void textToDisplay(int index, uint8_t letter){
 	arr_text[index]= letter;
 }
 
-void textLenDisplay(int len){
-	display.text_len = len;
+void textLenDisplay(int len_new){
+	display.text_len = len_new;
 	char_counter = 0;
 }
 
 
 /********************************************************************************/
 void next_character() {
-	if(display.text_len == 1){
+	if((display.text_len < 5)){
 		display.value_0 = arr_text[char_counter + 4];
-		display.value_1 = 0;
-		display.value_2 = 0;
-		display.value_3 = 0;
+		display.value_1 = arr_text[char_counter + 5];
+		display.value_2 = arr_text[char_counter + 6];
+		display.value_3 = arr_text[char_counter + 7];
 	}
-	else if ((char_counter) <= (display.text_len + 3)) {
+	else if((display.mode != MOVE)){
+		display.value_0 = arr_text[display.mode + 1];
+		display.value_1 = arr_text[display.mode + 2];
+		display.value_2 = arr_text[display.mode + 3];
+		display.value_3 = arr_text[display.mode + 4];
+	}
+	else if ( (char_counter) <= (display.text_len + 3)) {
 		display.value_0 = arr_text[char_counter + 0];
 		display.value_1 = arr_text[char_counter + 1];
 		display.value_2 = arr_text[char_counter + 2];
@@ -193,6 +200,14 @@ void printMcuD(){
 	gpioWrite(PIN_STATUS_0, GET_BIT(display.status, 0));
 	gpioWrite(PIN_STATUS_1, GET_BIT(display.status, 1));
 
+}
+ void modeToDisplay(int mode){
+	 if( (mode>=0) || (mode<=display.text_len) ){
+		 display.mode = mode;
+	 }
+	 else{
+		 display.mode = MOVE;
+	 }
 }
 
 void brighnessDisplay(int value_brighness){
